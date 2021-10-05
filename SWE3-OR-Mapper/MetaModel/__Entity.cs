@@ -67,5 +67,27 @@ namespace SWE3_OR_Mapper.MetaModel
         public __Field[] Fields { get; private set; }
 
         public __Field PrimaryKey { get; private set; }
+
+        public string GetSQLQuery(string prefix = null)
+        {
+            if (prefix == null)
+            {
+                prefix = "";
+            }
+
+            string rval = "SELECT ";
+            for (int i = 0; i < Fields.Length; i++)
+            {
+                if (i > 0)
+                {
+                    rval += ", ";
+                }
+
+                rval += prefix.Trim() + Fields[i].ColumnName;
+            }
+
+            rval += " FROM " + TableName;
+            return rval;
+        }
     }
 }
