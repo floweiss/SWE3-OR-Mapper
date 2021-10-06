@@ -27,7 +27,7 @@ namespace SWE3_OR_Mapper.MetaModel
             List<__Field> fields = new List<__Field>();
             foreach (PropertyInfo info in type.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
             {
-                if ((IgnoreAttribute) info.GetCustomAttribute(typeof(IgnoreAttribute)) == null) continue;
+                if ((IgnoreAttribute) info.GetCustomAttribute(typeof(IgnoreAttribute)) != null) continue;
 
                 __Field field = new __Field(this);
 
@@ -37,7 +37,8 @@ namespace SWE3_OR_Mapper.MetaModel
                 {
                     if (fieldAttribute is PrimaryKeyAttribute)
                     {
-                        (PrimaryKey = field).IsPrimaryKey = true;
+                        PrimaryKey = field;
+                        field.IsPrimaryKey = true;
                     }
 
                     field.ColumnName = (fieldAttribute?.ColumnName ?? info.Name);
@@ -49,11 +50,12 @@ namespace SWE3_OR_Mapper.MetaModel
                 {
                     if ((info.GetGetMethod() == null) || (!info.GetGetMethod().IsPublic)) continue;
 
-                    field.ColumnName = info.Name.ToUpper();
+                    field.ColumnName = info.Name;
                     field.ColumnType = info.PropertyType;
-                    field.IsNullable = true;
+                    //field.IsNullable = true;
                 }
 
+                field.Member = info;
                 fields.Add(field);
             }
             Fields = fields.ToArray();

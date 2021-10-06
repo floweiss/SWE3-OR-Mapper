@@ -49,11 +49,15 @@ namespace SWE3_OR_Mapper
                 }
 
                 cmd.CommandText += ent.Fields[i].ColumnName;
-                insert += (":v" + i.ToString());
+                insert += ("@v" + i.ToString());
 
                 p = cmd.CreateParameter();
-                p.ParameterName = (":v" + i.ToString());
+                p.ParameterName = ("@v" + i.ToString());
                 p.Value = ent.Fields[i].ToColumnType(ent.Fields[i].GetValue(obj));
+                if (p.Value is Enum)
+                {
+                    p.Value = (int) p.Value;
+                }
                 cmd.Parameters.Add(p);
 
                 if (!ent.Fields[i].IsPrimaryKey)
@@ -67,11 +71,15 @@ namespace SWE3_OR_Mapper
                         update += ", ";
                     }
 
-                    update += (ent.Fields[i].ColumnName + " = :w" + i.ToString());
+                    update += (ent.Fields[i].ColumnName + " = @w" + i.ToString());
 
                     p = cmd.CreateParameter();
-                    p.ParameterName = (":w" + i.ToString());
+                    p.ParameterName = ("@w" + i.ToString());
                     p.Value = ent.Fields[i].ToColumnType(ent.Fields[i].GetValue(obj));
+                    if (p.Value is Enum)
+                    {
+                        p.Value = (int)p.Value;
+                    }
                     cmd.Parameters.Add(p);
                 }
             }
@@ -105,10 +113,10 @@ namespace SWE3_OR_Mapper
         {
             IDbCommand cmd = Connection.CreateCommand();
 
-            cmd.CommandText = type._GetEntity().GetSQLQuery() + " WHERE " + type._GetEntity().PrimaryKey.ColumnName + " = :pk";
+            cmd.CommandText = type._GetEntity().GetSQLQuery() + " WHERE " + type._GetEntity().PrimaryKey.ColumnName + " = @pk";
 
             IDataParameter p = cmd.CreateParameter();
-            p.ParameterName = ":pk";
+            p.ParameterName = "@pk";
             p.Value = pk;
             cmd.Parameters.Add(p);
 

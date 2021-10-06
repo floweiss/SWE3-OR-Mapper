@@ -7,11 +7,5 @@ using SWE3_OR_Mapper.Attributes;
 
 namespace SWE3_OR_Mapper.Attributes
 {
-    public class PrimaryKeyAttribute : FieldAttribute
-    {
-        public PrimaryKeyAttribute()
-        {
-            Nullable = false;
-        }
-    }
+    public class PrimaryKeyAttribute : FieldAttribute { }
 }

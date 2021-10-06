@@ -8,6 +8,6 @@ namespace SWE3_OR_Mapper.Attributes
 
         public Type ColumnType = null;
 
-        public bool Nullable = true;
+        public bool Nullable = false;
     }
 }

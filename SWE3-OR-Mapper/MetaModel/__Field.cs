@@ -67,7 +67,7 @@ namespace SWE3_OR_Mapper.MetaModel
         {
             if (IsForeignKey)
             {
-                return Type._GetEntity(); // ToDo: finish
+                return Type._GetEntity().PrimaryKey.ToColumnType(Type._GetEntity().PrimaryKey.GetValue(value));
             }
 
             if (value is bool)
@@ -107,17 +107,17 @@ namespace SWE3_OR_Mapper.MetaModel
                 }
             }
 
-            if (Type == typeof(int))
-            {
-                return Convert.ToInt32(value);
-            }
             if (Type == typeof(short))
+            {
+                return Convert.ToInt16(value);
+            }
+            if (Type == typeof(int))
             {
                 return Convert.ToInt32(value);
             }
             if (Type == typeof(long))
             {
-                return Convert.ToInt32(value);
+                return Convert.ToInt64(value);
             }
 
             if (Type.IsEnum)
