@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -44,7 +45,15 @@ namespace SWE3_OR_Mapper.MetaModel
                     field.ColumnName = (fieldAttribute?.ColumnName ?? info.Name);
                     field.ColumnType = (fieldAttribute?.ColumnType ?? info.PropertyType);
                     field.IsNullable = fieldAttribute.Nullable;
-                    field.IsForeignKey = (fieldAttribute is ForeignKeyAttribute);
+
+                    if (field.IsForeignKey = (fieldAttribute is ForeignKeyAttribute))
+                    {
+                        field.IsExternal = typeof(IEnumerable).IsAssignableFrom(info.PropertyType);
+
+                        field.AssignmentTable = ((ForeignKeyAttribute)fieldAttribute).AssignmentTable;
+                        field.RemoteColumnName = ((ForeignKeyAttribute)fieldAttribute).RemoteColumnName;
+                        field.IsManyToMany = (!string.IsNullOrWhiteSpace(field.AssignmentTable));
+                    }
                 }
                 else
                 {
@@ -59,6 +68,8 @@ namespace SWE3_OR_Mapper.MetaModel
                 fields.Add(field);
             }
             Fields = fields.ToArray();
+            Internals = fields.Where(m => (!m.IsExternal)).ToArray();
+            Externals = fields.Where(m => m.IsExternal).ToArray();
         }
 
 
@@ -67,6 +78,10 @@ namespace SWE3_OR_Mapper.MetaModel
         public string TableName { get; private set; }
 
         public __Field[] Fields { get; private set; }
+
+        public __Field[] Externals { get; private set; }
+        
+        public __Field[] Internals { get; private set; }
 
         public __Field PrimaryKey { get; private set; }
 
@@ -78,18 +93,29 @@ namespace SWE3_OR_Mapper.MetaModel
             }
 
             string rval = "SELECT ";
-            for (int i = 0; i < Fields.Length; i++)
+            for (int i = 0; i < Internals.Length; i++)
             {
                 if (i > 0)
                 {
                     rval += ", ";
                 }
 
-                rval += prefix.Trim() + Fields[i].ColumnName;
+                rval += prefix.Trim() + Internals[i].ColumnName;
             }
 
             rval += " FROM " + TableName;
             return rval;
+        }
+
+        public __Field GetFieldForColumn(string columnName)
+        {
+            columnName = columnName.ToUpper();
+            foreach (__Field i in Internals)
+            {
+                if (i.ColumnName.ToUpper() == columnName) { return i; }
+            }
+
+            return null;
         }
     }
 }

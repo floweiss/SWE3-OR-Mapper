@@ -29,5 +29,7 @@ namespace SWE3_OR_Mapper.SampleApp.School
         {
             get; set;
         }
+
+        public int Semester { get; set; }
     }
 }

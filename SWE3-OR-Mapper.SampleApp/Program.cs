@@ -45,6 +45,24 @@ namespace SWE3_OR_Mapper.SampleApp
 
             Console.WriteLine("\n");
 
+            Console.WriteLine("(3) Create and load an object with foreign key");
+            Console.WriteLine("----------------------------------------------");
+
+            Teacher teacher = Orm.Get<Teacher>("t.0");
+
+            Class c = new Class();
+            c.ID = "c.0";
+            c.Name = "Demonology 101";
+            c.Semester = 3;
+            c.Teacher = teacher;
+
+            Orm.Save(c);
+
+            c = Orm.Get<Class>("c.0");
+            Console.WriteLine((c.Teacher.Gender == Gender.Male ? "Mr. " : "Ms. ") + c.Teacher.Name + " teaches " + c.Name + ".");
+
+            Console.WriteLine("\n");
+
             Orm.Connection.Close();
         }
     }

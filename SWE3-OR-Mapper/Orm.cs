@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Data;
 using System.Linq;
 using System.Text;
@@ -11,6 +12,8 @@ namespace SWE3_OR_Mapper
     public static class Orm
     {
         private static Dictionary<Type, __Entity> _entities = new Dictionary<Type, __Entity>();
+
+        private static ICollection<object> _localCache = new List<object>();
 
         public static IDbConnection Connection { get; set; }
 
@@ -31,6 +34,7 @@ namespace SWE3_OR_Mapper
         public static void Save(object obj)
         {
             __Entity ent = obj._GetEntity();
+            _localCache.Add(obj);
 
             IDbCommand cmd = Connection.CreateCommand();
             cmd.CommandText = ("INSERT INTO " + ent.TableName + " (");
@@ -40,7 +44,7 @@ namespace SWE3_OR_Mapper
 
             IDbDataParameter p;
             bool first = true;
-            for (int i = 0; i < ent.Fields.Length; i++)
+            for (int i = 0; i < ent.Internals.Length; i++)
             {
                 if (i > 0)
                 {
@@ -48,19 +52,19 @@ namespace SWE3_OR_Mapper
                     insert += ", ";
                 }
 
-                cmd.CommandText += ent.Fields[i].ColumnName;
+                cmd.CommandText += ent.Internals[i].ColumnName;
                 insert += ("@v" + i.ToString());
 
                 p = cmd.CreateParameter();
                 p.ParameterName = ("@v" + i.ToString());
-                p.Value = ent.Fields[i].ToColumnType(ent.Fields[i].GetValue(obj));
+                p.Value = ent.Internals[i].ToColumnType(ent.Internals[i].GetValue(obj));
                 if (p.Value is Enum)
                 {
                     p.Value = (int) p.Value;
                 }
                 cmd.Parameters.Add(p);
 
-                if (!ent.Fields[i].IsPrimaryKey)
+                if (!ent.Internals[i].IsPrimaryKey)
                 {
                     if (first)
                     {
@@ -71,11 +75,11 @@ namespace SWE3_OR_Mapper
                         update += ", ";
                     }
 
-                    update += (ent.Fields[i].ColumnName + " = @w" + i.ToString());
+                    update += (ent.Internals[i].ColumnName + " = @w" + i.ToString());
 
                     p = cmd.CreateParameter();
                     p.ParameterName = ("@w" + i.ToString());
-                    p.Value = ent.Fields[i].ToColumnType(ent.Fields[i].GetValue(obj));
+                    p.Value = ent.Internals[i].ToColumnType(ent.Internals[i].GetValue(obj));
                     if (p.Value is Enum)
                     {
                         p.Value = (int)p.Value;
@@ -92,49 +96,139 @@ namespace SWE3_OR_Mapper
 
         public static T Get<T>(object pk)
         {
-            return (T) _CreateObject(typeof(T), pk);
+            IDbCommand cmd = Connection.CreateCommand();
+            
+            Type type = typeof(T);
+            cmd.CommandText = type._GetEntity().GetSQLQuery() + " WHERE " + type._GetEntity().PrimaryKey.ColumnName + " = :pk";
+
+            IDataParameter p = cmd.CreateParameter();
+            p.ParameterName = (":pk");
+            p.Value = pk;
+            cmd.Parameters.Add(p);
+
+            IDataReader reader = cmd.ExecuteReader();
+            object obj = null;
+            if (reader.Read())
+            {
+                //obj = _CreateObject(type, reader, null);
+
+                __Entity ent = type._GetEntity();
+                obj = _SearchCache(type, ent.PrimaryKey.ToFieldType(reader.GetValue(reader.GetOrdinal(ent.PrimaryKey.ColumnName))));
+
+                if (obj == null)
+                {
+                    if (_localCache == null) { _localCache = new List<object>(); }
+                    _localCache.Add(obj = Activator.CreateInstance(type));
+                }
+                else
+                {
+                    reader.Close();
+                    cmd.Dispose();
+                    return (T) obj;
+                }
+
+                List<object> readerObjects = new List<object>();
+                foreach (__Field i in ent.Internals)
+                {
+                    readerObjects.Add(reader.GetValue(reader.GetOrdinal(i.ColumnName)));
+                }
+                reader.Close();
+                foreach (__Field i in ent.Internals)
+                {
+                    object value = i.ToFieldType(readerObjects[0]);
+                    readerObjects.RemoveAt(0);
+                    i.SetValue(obj, value);
+                }
+
+                foreach (__Field i in ent.Externals)
+                {
+                    i.SetValue(obj, i.Fill(Activator.CreateInstance(i.Type), obj));
+                }
+            }
+            
+            cmd.Dispose();
+            return (T) obj;
         }
 
 
-
-        private static object _CreateObject(Type type, IDataReader reader)
+        internal static object _SearchCache(Type t, object pk)
         {
-            object obj = Activator.CreateInstance(type);
-
-            foreach (__Field i in type._GetEntity().Fields)
+            if (_localCache != null)
             {
-                i.SetValue(obj, i.ToFieldType(reader.GetValue(reader.GetOrdinal(i.ColumnName))));
+                foreach (object i in _localCache)
+                {
+                    if (i.GetType() != t) continue;
+
+                    if (t._GetEntity().PrimaryKey.GetValue(i).Equals(pk)) { return i; }
+                }
+            }
+
+            return null;
+        }
+
+        internal static object _CreateObject(Type type, IDataReader reader, bool inLoop = false)
+        {
+            __Entity ent = type._GetEntity();
+            object obj = _SearchCache(type, ent.PrimaryKey.ToFieldType(reader.GetValue(reader.GetOrdinal(ent.PrimaryKey.ColumnName))));
+
+            if (obj == null)
+            {
+                if (_localCache == null) { _localCache = new List<object>(); }
+                _localCache.Add(obj = Activator.CreateInstance(type));
+            }
+
+            foreach (__Field i in ent.Internals)
+            {
+                object value = i.ToFieldType(reader.GetValue(reader.GetOrdinal(i.ColumnName)));
+                if (i.IsForeignKey && !inLoop)
+                {
+                    reader.Close();
+                }
+                i.SetValue(obj, value);
+            }
+
+            if (!inLoop)
+            {
+                reader.Close();
+            }
+
+            foreach (__Field i in ent.Externals)
+            {
+                i.SetValue(obj, i.Fill(Activator.CreateInstance(i.Type), obj));
             }
 
             return obj;
         }
 
-        private static object _CreateObject(Type type, object pk)
+        internal static object _CreateObject(Type type, object pk)
         {
-            IDbCommand cmd = Connection.CreateCommand();
-
-            cmd.CommandText = type._GetEntity().GetSQLQuery() + " WHERE " + type._GetEntity().PrimaryKey.ColumnName + " = @pk";
-
-            IDataParameter p = cmd.CreateParameter();
-            p.ParameterName = "@pk";
-            p.Value = pk;
-            cmd.Parameters.Add(p);
-
-            object obj = null;
-            IDataReader reader = cmd.ExecuteReader();
-            if (reader.Read())
-            {
-                obj = _CreateObject(type, reader);
-            }
-            reader.Close();
-            reader.Dispose();
-            cmd.Dispose();
+            object obj = _SearchCache(type, pk);
 
             if (obj == null)
             {
-                throw new Exception("No data");
+                IDbCommand cmd = Connection.CreateCommand();
+
+                cmd.CommandText = type._GetEntity().GetSQLQuery() + " WHERE " + type._GetEntity().PrimaryKey.ColumnName + " = :pk";
+
+                IDataParameter p = cmd.CreateParameter();
+                p.ParameterName = (":pk");
+                p.Value = pk;
+                cmd.Parameters.Add(p);
+
+                IDataReader reader = cmd.ExecuteReader();
+                if (reader.Read())
+                {
+                    obj = _CreateObject(type, reader);
+                }
+
+                reader.Close();
+                cmd.Dispose();
             }
 
+            if (obj == null)
+            {
+                throw new Exception("No data.");
+            }
             return obj;
         }
     }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -39,7 +40,33 @@ namespace SWE3_OR_Mapper.MetaModel
 
         public bool IsForeignKey { get; internal set; } = false;
 
-        public bool IsNullable { get; internal set; } = false;
+        public string AssignmentTable
+        {
+            get; internal set;
+        }
+
+        public string RemoteColumnName
+        {
+            get; internal set;
+        }
+
+        public bool IsManyToMany
+        {
+            get; internal set;
+        }
+
+        public bool IsNullable
+        {
+            get; internal set;
+        } = false;
+
+        
+        public bool IsExternal
+        {
+            get; internal set;
+        } = false;
+
+
 
         public object GetValue(object obj)
         {
@@ -91,6 +118,11 @@ namespace SWE3_OR_Mapper.MetaModel
 
         public object ToFieldType(object value)
         {
+            if (IsForeignKey)
+            {
+                return Orm._CreateObject(Type, value);
+            }
+
             if (Type == typeof(bool))
             {
                 if (value is int)
@@ -126,6 +158,37 @@ namespace SWE3_OR_Mapper.MetaModel
             }
 
             return value;
+        }
+
+        public object Fill(object list, object obj)
+        {
+            IDbCommand cmd = Orm.Connection.CreateCommand();
+
+            if (IsManyToMany)
+            {
+                cmd.CommandText = Type.GenericTypeArguments[0]._GetEntity().GetSQLQuery() +
+                                  " WHERE ID IN (SELECT " + RemoteColumnName + " FROM " + AssignmentTable + " WHERE " + ColumnName + " = :fk)";
+            }
+            else
+            {
+                cmd.CommandText = Type.GenericTypeArguments[0]._GetEntity().GetSQLQuery() + " WHERE " + ColumnName + " = :fk";
+            }
+
+            IDataParameter p = cmd.CreateParameter();
+            p.ParameterName = ":fk";
+            p.Value = Entity.PrimaryKey.GetValue(obj);
+            cmd.Parameters.Add(p);
+
+            IDataReader re = cmd.ExecuteReader();
+            while (re.Read())
+            {
+                list.GetType().GetMethod("Add").Invoke(list, new object[] { Orm._CreateObject(Type.GenericTypeArguments[0], re, true) });
+            }
+            re.Close();
+            re.Dispose();
+            cmd.Dispose();
+
+            return list;
         }
     }
 }
