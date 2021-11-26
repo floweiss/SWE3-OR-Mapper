@@ -25,10 +25,7 @@ namespace SWE3_OR_Mapper.SampleApp.School
 
         /// <summary>Gets or sets the class teacher.</summary>
         [ForeignKey(ColumnName = "KTEACHER")]
-        public Teacher Teacher
-        {
-            get; set;
-        }
+        public Teacher Teacher { get; set; }
 
         public int Semester { get; set; }
     }
