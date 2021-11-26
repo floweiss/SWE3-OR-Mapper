@@ -20,6 +20,7 @@ namespace SWE3_OR_Mapper.SampleApp
             CreateLoadWithFK();
             LoadWithFK();
             Caching();
+            CachingChanges();
             GetAll();
             Operations();
             Count();
@@ -123,12 +124,31 @@ namespace SWE3_OR_Mapper.SampleApp
                 Console.WriteLine("Object [" + t.ID + "] instance no: " + t.InstanceNumber.ToString());
             }
 
+            Orm.Cache = null;
+
+            Console.WriteLine("\n");
+        }
+
+        public static void CachingChanges()
+        {
+            Console.WriteLine("(6) Caching with changes");
+            Console.WriteLine("-----------------------");
+
+            Orm.Cache = new HashCache();
+            Teacher t = Orm.Get<Teacher>("t.0");
+            Console.WriteLine("Object [" + t.ID + "] (" + t.Salary + ") instance no: " + t.InstanceNumber.ToString());
+
+            t.Salary += 500;
+
+            Teacher t2 = Orm.Get<Teacher>("t.0");
+            Console.WriteLine("Object [" + t2.ID + "] (" + t2.Salary + ") instance no: " + t2.InstanceNumber.ToString());
+
             Console.WriteLine("\n");
         }
 
         public static void GetAll()
         {
-            Console.WriteLine("(6) Get All");
+            Console.WriteLine("(7) Get All");
             Console.WriteLine("-----------------");
 
             Teacher t = new Teacher();
@@ -162,7 +182,7 @@ namespace SWE3_OR_Mapper.SampleApp
 
         public static void Operations()
         {
-            Console.WriteLine("(7) Get specific teachers");
+            Console.WriteLine("(8) Get specific teachers");
             Console.WriteLine("-----------------");
 
             IEnumerable<Teacher> teacherList = Orm.GetAll<Teacher>();
@@ -195,7 +215,7 @@ namespace SWE3_OR_Mapper.SampleApp
 
         public static void Count()
         {
-            Console.WriteLine("(7) Count objects");
+            Console.WriteLine("(9) Count objects");
             Console.WriteLine("-----------------");
 
             int teacherCount = Orm.Count<Teacher>();

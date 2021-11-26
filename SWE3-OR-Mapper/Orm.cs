@@ -149,7 +149,6 @@ namespace SWE3_OR_Mapper
                 }
                 else
                 {
-                    
                     reader.Close();
                     cmd.Dispose();
                     return (T)obj;
