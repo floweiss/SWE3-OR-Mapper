@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SWE3_OR_Mapper.MetaModel
@@ -94,7 +96,7 @@ namespace SWE3_OR_Mapper.MetaModel
         {
             if (IsForeignKey)
             {
-                return Type._GetEntity().PrimaryKey.ToColumnType(Type._GetEntity().PrimaryKey.GetValue(value));
+                return Type.GetEntity().PrimaryKey.ToColumnType(Type.GetEntity().PrimaryKey.GetValue(value));
             }
 
             if (value is bool)
@@ -120,7 +122,7 @@ namespace SWE3_OR_Mapper.MetaModel
         {
             if (IsForeignKey)
             {
-                return Orm._CreateObject(Type, value);
+                return Orm.GetObject(Type, value);
             }
 
             if (Type == typeof(bool))
@@ -160,18 +162,18 @@ namespace SWE3_OR_Mapper.MetaModel
             return value;
         }
 
-        public object Fill(object list, object obj)
+        public object FillExternals(object list, object obj)
         {
             IDbCommand cmd = Orm.Connection.CreateCommand();
 
             if (IsManyToMany)
             {
-                cmd.CommandText = Type.GenericTypeArguments[0]._GetEntity().GetSQLQuery() +
+                cmd.CommandText = Type.GenericTypeArguments[0].GetEntity().GetSQLQuery() +
                                   " WHERE ID IN (SELECT " + RemoteColumnName + " FROM " + AssignmentTable + " WHERE " + ColumnName + " = :fk)";
             }
             else
             {
-                cmd.CommandText = Type.GenericTypeArguments[0]._GetEntity().GetSQLQuery() + " WHERE " + ColumnName + " = :fk";
+                cmd.CommandText = Type.GenericTypeArguments[0].GetEntity().GetSQLQuery() + " WHERE " + ColumnName + " = :fk";
             }
 
             IDataParameter p = cmd.CreateParameter();
@@ -182,7 +184,12 @@ namespace SWE3_OR_Mapper.MetaModel
             IDataReader re = cmd.ExecuteReader();
             while (re.Read())
             {
-                list.GetType().GetMethod("Add").Invoke(list, new object[] { Orm._CreateObject(Type.GenericTypeArguments[0], re, true) });
+                Type type = Type.GenericTypeArguments[0];
+                list.GetType().GetMethod("Add").Invoke(list, new object[] { Orm.CreateObject(type, re, true) });
+                if (re.IsClosed)
+                {
+                    break;
+                }
             }
             re.Close();
             re.Dispose();

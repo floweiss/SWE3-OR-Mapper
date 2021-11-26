@@ -4,14 +4,23 @@ using SWE3_OR_Mapper.SampleApp.School;
 
 namespace SWE3_OR_Mapper.SampleApp
 {
-    class Program
+    public class Program
     {
-        static void Main(string[] args)
+        public static void Main(string[] args)
         {
             Orm.Connection = new NpgsqlConnection("Host=localhost;Username=swe3;Password=Test123;Database=postgres");
             Orm.Connection.Open();
 
+            Insert();
+            LoadModify();
+            CreateLoadWithFK();
+            LoadWithFK();
 
+            Orm.Connection.Close();
+        }
+
+        public static void Insert()
+        {
             Console.WriteLine("(1) Insert object");
             Console.WriteLine("-----------------");
 
@@ -26,12 +35,14 @@ namespace SWE3_OR_Mapper.SampleApp
 
             Orm.Save(t);
             Console.WriteLine("\n");
+        }
 
-
+        public static void LoadModify()
+        {
             Console.WriteLine("(2) Load and modify object");
             Console.WriteLine("--------------------------");
 
-            t = Orm.Get<Teacher>("t.0");
+            Teacher t = Orm.Get<Teacher>("t.0");
 
             Console.WriteLine();
             Console.WriteLine("Salary for " + t.FirstName + " " + t.Name + " is " + t.Salary.ToString() + " Pesos.");
@@ -44,7 +55,10 @@ namespace SWE3_OR_Mapper.SampleApp
             Orm.Save(t);
 
             Console.WriteLine("\n");
+        }
 
+        public static void CreateLoadWithFK()
+        {
             Console.WriteLine("(3) Create and load an object with foreign key");
             Console.WriteLine("----------------------------------------------");
 
@@ -62,8 +76,23 @@ namespace SWE3_OR_Mapper.SampleApp
             Console.WriteLine((c.Teacher.Gender == Gender.Male ? "Mr. " : "Ms. ") + c.Teacher.Name + " teaches " + c.Name + ".");
 
             Console.WriteLine("\n");
+        }
 
-            Orm.Connection.Close();
+        public static void LoadWithFK()
+        {
+            Console.WriteLine("(4) Load teacher and show classes");
+            Console.WriteLine("---------------------------------");
+
+            Teacher t1 = Orm.Get<Teacher>("t.0");
+
+            Console.WriteLine(t1.FirstName + " " + t1.Name + " teaches:");
+
+            foreach (Class i in t1.Classes)
+            {
+                Console.WriteLine(i.Name);
+            }
+
+            Console.WriteLine("\n");
         }
     }
 }

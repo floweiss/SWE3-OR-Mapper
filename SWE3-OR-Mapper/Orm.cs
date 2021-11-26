@@ -13,11 +13,11 @@ namespace SWE3_OR_Mapper
     {
         private static Dictionary<Type, __Entity> _entities = new Dictionary<Type, __Entity>();
 
-        private static ICollection<object> _localCache = new List<object>();
+        //private static ICollection<object> _localCache = new List<object>();
 
         public static IDbConnection Connection { get; set; }
 
-        internal static __Entity _GetEntity(this object obj)
+        internal static __Entity GetEntity(this object obj)
         {
             Type type = ((obj is Type) ? (Type) obj : obj.GetType());
 
@@ -33,8 +33,8 @@ namespace SWE3_OR_Mapper
 
         public static void Save(object obj)
         {
-            __Entity ent = obj._GetEntity();
-            _localCache.Add(obj);
+            __Entity ent = obj.GetEntity();
+            //_localCache.Add(obj);
 
             IDbCommand cmd = Connection.CreateCommand();
             cmd.CommandText = ("INSERT INTO " + ent.TableName + " (");
@@ -99,7 +99,7 @@ namespace SWE3_OR_Mapper
             IDbCommand cmd = Connection.CreateCommand();
             
             Type type = typeof(T);
-            cmd.CommandText = type._GetEntity().GetSQLQuery() + " WHERE " + type._GetEntity().PrimaryKey.ColumnName + " = :pk";
+            cmd.CommandText = type.GetEntity().GetSQLQuery() + " WHERE " + type.GetEntity().PrimaryKey.ColumnName + " = :pk";
 
             IDataParameter p = cmd.CreateParameter();
             p.ParameterName = (":pk");
@@ -110,15 +110,16 @@ namespace SWE3_OR_Mapper
             object obj = null;
             if (reader.Read())
             {
-                //obj = _CreateObject(type, reader, null);
+                //obj = CreateObject(type, reader, null);
 
-                __Entity ent = type._GetEntity();
-                obj = _SearchCache(type, ent.PrimaryKey.ToFieldType(reader.GetValue(reader.GetOrdinal(ent.PrimaryKey.ColumnName))));
+                __Entity ent = type.GetEntity();
+                //obj = SearchCache(type, ent.PrimaryKey.ToFieldType(reader.GetValue(reader.GetOrdinal(ent.PrimaryKey.ColumnName))));
 
                 if (obj == null)
                 {
-                    if (_localCache == null) { _localCache = new List<object>(); }
-                    _localCache.Add(obj = Activator.CreateInstance(type));
+                    //if (_localCache == null) { _localCache = new List<object>(); }
+                    obj = Activator.CreateInstance(type);
+                    //_localCache.Add(obj);
                 }
                 else
                 {
@@ -142,7 +143,8 @@ namespace SWE3_OR_Mapper
 
                 foreach (__Field i in ent.Externals)
                 {
-                    i.SetValue(obj, i.Fill(Activator.CreateInstance(i.Type), obj));
+                    object list = Activator.CreateInstance(i.Type);
+                    i.SetValue(obj, i.FillExternals(list, obj));
                 }
             }
             
@@ -151,39 +153,52 @@ namespace SWE3_OR_Mapper
         }
 
 
-        internal static object _SearchCache(Type t, object pk)
+        internal static object SearchCache(Type t, object pk)
         {
-            if (_localCache != null)
+            /*if (_localCache != null)
             {
                 foreach (object i in _localCache)
                 {
                     if (i.GetType() != t) continue;
 
-                    if (t._GetEntity().PrimaryKey.GetValue(i).Equals(pk)) { return i; }
+                    if (t.GetEntity().PrimaryKey.GetValue(i).Equals(pk)) { return i; }
                 }
-            }
+            }*/
 
             return null;
         }
 
-        internal static object _CreateObject(Type type, IDataReader reader, bool inLoop = false)
+        internal static object CreateObject(Type type, IDataReader reader, bool inLoop = false)
         {
-            __Entity ent = type._GetEntity();
-            object obj = _SearchCache(type, ent.PrimaryKey.ToFieldType(reader.GetValue(reader.GetOrdinal(ent.PrimaryKey.ColumnName))));
+            __Entity ent = type.GetEntity();
+            object obj = SearchCache(type, ent.PrimaryKey.ToFieldType(reader.GetValue(reader.GetOrdinal(ent.PrimaryKey.ColumnName))));
 
             if (obj == null)
             {
-                if (_localCache == null) { _localCache = new List<object>(); }
-                _localCache.Add(obj = Activator.CreateInstance(type));
+                //if (_localCache == null) { _localCache = new List<object>(); }
+                obj = Activator.CreateInstance(type);
+                //_localCache.Add(obj);
             }
+
+            List<object> readerObjects = new List<object>();
+            foreach (__Field i in ent.Internals)
+            {
+                if (i.IsForeignKey && inLoop)
+                {
+                    continue;
+                }
+                readerObjects.Add(reader.GetValue(reader.GetOrdinal(i.ColumnName)));
+            }
+            reader.Close();
 
             foreach (__Field i in ent.Internals)
             {
-                object value = i.ToFieldType(reader.GetValue(reader.GetOrdinal(i.ColumnName)));
-                if (i.IsForeignKey && !inLoop)
+                if (i.IsForeignKey && inLoop)
                 {
-                    reader.Close();
+                    continue;
                 }
+                object value = i.ToFieldType(readerObjects[0]);
+                readerObjects.RemoveAt(0);
                 i.SetValue(obj, value);
             }
 
@@ -194,21 +209,21 @@ namespace SWE3_OR_Mapper
 
             foreach (__Field i in ent.Externals)
             {
-                i.SetValue(obj, i.Fill(Activator.CreateInstance(i.Type), obj));
+                i.SetValue(obj, i.FillExternals(Activator.CreateInstance(i.Type), obj));
             }
 
             return obj;
         }
 
-        internal static object _CreateObject(Type type, object pk)
+        internal static object GetObject(Type type, object pk)
         {
-            object obj = _SearchCache(type, pk);
+            object obj = SearchCache(type, pk);
 
             if (obj == null)
             {
                 IDbCommand cmd = Connection.CreateCommand();
 
-                cmd.CommandText = type._GetEntity().GetSQLQuery() + " WHERE " + type._GetEntity().PrimaryKey.ColumnName + " = :pk";
+                cmd.CommandText = type.GetEntity().GetSQLQuery() + " WHERE " + type.GetEntity().PrimaryKey.ColumnName + " = :pk";
 
                 IDataParameter p = cmd.CreateParameter();
                 p.ParameterName = (":pk");
@@ -218,7 +233,7 @@ namespace SWE3_OR_Mapper
                 IDataReader reader = cmd.ExecuteReader();
                 if (reader.Read())
                 {
-                    obj = _CreateObject(type, reader);
+                    obj = CreateObject(type, reader);
                 }
 
                 reader.Close();
