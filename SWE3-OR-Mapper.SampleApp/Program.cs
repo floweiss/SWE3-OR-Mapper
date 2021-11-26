@@ -1,5 +1,6 @@
 ﻿using System;
 using Npgsql;
+using SWE3_OR_Mapper.Cache;
 using SWE3_OR_Mapper.SampleApp.School;
 
 namespace SWE3_OR_Mapper.SampleApp
@@ -15,6 +16,7 @@ namespace SWE3_OR_Mapper.SampleApp
             LoadModify();
             CreateLoadWithFK();
             LoadWithFK();
+            Caching();
 
             Orm.Connection.Close();
         }
@@ -93,6 +95,27 @@ namespace SWE3_OR_Mapper.SampleApp
             }
 
             Console.WriteLine("\n");
+        }
+
+        public static void Caching()
+        {
+            Console.WriteLine("(6) Caching");
+            Console.WriteLine("-----------------------");
+
+            Console.WriteLine("\rWithout cache:");
+            for (int i = 0; i <= 5; i++)
+            {
+                Teacher t = Orm.Get<Teacher>("t.0");
+                Console.WriteLine("Object [" + t.ID + "] instance no: " + t.InstanceNumber.ToString());
+            }
+
+            Console.WriteLine("\rWith cache:");
+            Orm.Cache = new HashCache();
+            for (int i = 0; i <= 5; i++)
+            {
+                Teacher t = Orm.Get<Teacher>("t.0");
+                Console.WriteLine("Object [" + t.ID + "] instance no: " + t.InstanceNumber.ToString());
+            }
         }
     }
 }

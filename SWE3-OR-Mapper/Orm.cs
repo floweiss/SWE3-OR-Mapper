@@ -5,6 +5,7 @@ using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using SWE3_OR_Mapper.Cache;
 using SWE3_OR_Mapper.MetaModel;
 
 namespace SWE3_OR_Mapper
@@ -13,9 +14,9 @@ namespace SWE3_OR_Mapper
     {
         private static Dictionary<Type, __Entity> _entities = new Dictionary<Type, __Entity>();
 
-        //private static ICollection<object> _localCache = new List<object>();
-
         public static IDbConnection Connection { get; set; }
+
+        public static ICache Cache { get; set; }
 
         internal static __Entity GetEntity(this object obj)
         {
@@ -33,8 +34,12 @@ namespace SWE3_OR_Mapper
 
         public static void Save(object obj)
         {
+            if (Cache != null && !Cache.Changed(obj))
+            {
+                return;
+            }
+
             __Entity ent = obj.GetEntity();
-            //_localCache.Add(obj);
 
             IDbCommand cmd = Connection.CreateCommand();
             cmd.CommandText = ("INSERT INTO " + ent.TableName + " (");
@@ -92,6 +97,11 @@ namespace SWE3_OR_Mapper
 
             cmd.ExecuteNonQuery();
             cmd.Dispose();
+
+            if (Cache != null)
+            {
+                Cache.Set(obj);
+            }
         }
 
         public static T Get<T>(object pk)
@@ -110,22 +120,20 @@ namespace SWE3_OR_Mapper
             object obj = null;
             if (reader.Read())
             {
-                //obj = CreateObject(type, reader, null);
-
                 __Entity ent = type.GetEntity();
-                //obj = SearchCache(type, ent.PrimaryKey.ToFieldType(reader.GetValue(reader.GetOrdinal(ent.PrimaryKey.ColumnName))));
+                obj = SearchCache(type, ent.PrimaryKey.ToFieldType(reader.GetValue(reader.GetOrdinal(ent.PrimaryKey.ColumnName))));
 
                 if (obj == null)
                 {
-                    //if (_localCache == null) { _localCache = new List<object>(); }
                     obj = Activator.CreateInstance(type);
-                    //_localCache.Add(obj);
                 }
                 else
                 {
+                    
                     reader.Close();
                     cmd.Dispose();
-                    return (T) obj;
+                    return (T)obj;
+                    
                 }
 
                 List<object> readerObjects = new List<object>();
@@ -149,21 +157,21 @@ namespace SWE3_OR_Mapper
             }
             
             cmd.Dispose();
+
+            if (Cache != null)
+            {
+                Cache.Set(obj);
+            }
             return (T) obj;
         }
 
 
         internal static object SearchCache(Type t, object pk)
         {
-            /*if (_localCache != null)
+            if (Cache != null && Cache.ContainsKey(t, pk))
             {
-                foreach (object i in _localCache)
-                {
-                    if (i.GetType() != t) continue;
-
-                    if (t.GetEntity().PrimaryKey.GetValue(i).Equals(pk)) { return i; }
-                }
-            }*/
+                return Cache.Get(t, pk);
+            }
 
             return null;
         }
