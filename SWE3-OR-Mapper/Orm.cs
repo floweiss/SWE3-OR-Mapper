@@ -104,6 +104,26 @@ namespace SWE3_OR_Mapper
             }
         }
 
+        public static int Count<T>()
+        {
+            IDbCommand cmd = Connection.CreateCommand();
+
+            Type type = typeof(T);
+            cmd.CommandText = type.GetEntity().GetCountSQLQuery();
+
+            IDataReader reader = cmd.ExecuteReader();
+            int counter = 0;
+            while (reader.Read())
+            {
+                counter++;
+            }
+
+            reader.Close();
+            cmd.Dispose();
+
+            return counter;
+        }
+
         public static T Get<T>(object pk)
         {
             IDbCommand cmd = Connection.CreateCommand();
@@ -133,7 +153,6 @@ namespace SWE3_OR_Mapper
                     reader.Close();
                     cmd.Dispose();
                     return (T)obj;
-                    
                 }
 
                 List<object> readerObjects = new List<object>();
@@ -163,6 +182,58 @@ namespace SWE3_OR_Mapper
                 Cache.Set(obj);
             }
             return (T) obj;
+        }
+
+        public static List<T> GetAll<T>()
+        {
+            IDbCommand cmd = Connection.CreateCommand();
+
+            Type type = typeof(T);
+            cmd.CommandText = type.GetEntity().GetSQLQuery();
+
+            List<T> objects = new List<T>();
+            object obj = null;
+            __Entity ent = type.GetEntity();
+            List<object>[] readerObjects = new List<object>[Count<T>()];
+            int counter = 0;
+            IDataReader reader = cmd.ExecuteReader();
+            while (reader.Read())
+            {
+                readerObjects[counter] = new List<object>();
+                foreach (__Field i in ent.Internals)
+                {
+                    readerObjects[counter].Add(reader.GetValue(reader.GetOrdinal(i.ColumnName)));
+                }
+
+                counter++;
+            }
+
+            reader.Close();
+
+
+            foreach (var readerObject in readerObjects)
+            {
+                obj = Activator.CreateInstance(type);
+
+                foreach (__Field i in ent.Internals)
+                {
+                    object value = i.ToFieldType(readerObject[0]);
+                    readerObject.RemoveAt(0);
+                    i.SetValue(obj, value);
+                }
+
+                foreach (__Field i in ent.Externals)
+                {
+                    object list = Activator.CreateInstance(i.Type);
+                    i.SetValue(obj, i.FillExternals(list, obj));
+                }
+
+                objects.Add((T)obj);
+            }
+
+            cmd.Dispose();
+
+            return objects;
         }
 
 

@@ -107,6 +107,11 @@ namespace SWE3_OR_Mapper.MetaModel
             return rval;
         }
 
+        public string GetCountSQLQuery()
+        {
+            return "SELECT " + Internals[0].ColumnName + " FROM " + TableName;
+        }
+
         public __Field GetFieldForColumn(string columnName)
         {
             columnName = columnName.ToUpper();
