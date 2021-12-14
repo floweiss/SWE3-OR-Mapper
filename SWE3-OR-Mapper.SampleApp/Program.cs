@@ -145,6 +145,7 @@ namespace SWE3_OR_Mapper.SampleApp
             Teacher t2 = Orm.Get<Teacher>("t.0");
             Console.WriteLine("Object [" + t2.ID + "] (" + t2.Salary + ") instance no: " + t2.InstanceNumber.ToString());
 
+            Orm.Cache = null;
             Console.WriteLine("\n");
         }
 
