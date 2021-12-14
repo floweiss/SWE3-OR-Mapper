@@ -39,7 +39,7 @@ namespace SWE3_OR_Mapper.Cache
         {
             if (obj != null)
             {
-                GetCache(obj.GetType()).Add(obj.GetEntity().PrimaryKey.GetValue(obj), obj);
+                GetCache(obj.GetType())[obj.GetEntity().PrimaryKey.GetValue(obj)] = obj;
             }
         }
 

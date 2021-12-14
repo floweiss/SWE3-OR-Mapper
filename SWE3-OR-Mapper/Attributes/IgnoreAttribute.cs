@@ -6,5 +6,6 @@ using System.Threading.Tasks;
 
 namespace SWE3_OR_Mapper.Attributes
 {
+    /// <summary> This attribute marks a property to be ignored </summary>
     public class IgnoreAttribute : Attribute { }
 }

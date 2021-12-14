@@ -24,6 +24,8 @@ namespace SWE3_OR_Mapper.SampleApp
             GetAll();
             Operations();
             Count();
+            LoadWithMToN();
+            LoadModifyWithMToN();
 
             Orm.Connection.Close();
         }
@@ -186,6 +188,7 @@ namespace SWE3_OR_Mapper.SampleApp
             Console.WriteLine("-----------------");
 
             IEnumerable<Teacher> teacherList = Orm.GetAll<Teacher>();
+            
             Console.WriteLine("Female teachers:");
             foreach (Teacher teacher in teacherList.Where(t => t.Gender != Gender.Male))
             {
@@ -209,6 +212,17 @@ namespace SWE3_OR_Mapper.SampleApp
             {
                 Console.WriteLine(teacher.FirstName + " " + teacher.Name);
             }
+            
+            var teacherQuery =
+                from t in Orm.GetAll<Teacher>()
+                where t.Salary > 42000
+                orderby t.Salary descending
+                select t;
+            Console.WriteLine("\nTeachers earning more than 42000 with LINQ:");
+            foreach (Teacher teacher in teacherQuery)
+            {
+                Console.WriteLine("Salary for " + teacher.FirstName + " " + teacher.Name + " is " + teacher.Salary.ToString() + " Pesos. Gender: " + teacher.Gender);
+            }
 
             Console.WriteLine("\n");
         }
@@ -223,6 +237,83 @@ namespace SWE3_OR_Mapper.SampleApp
 
             Console.WriteLine("Amount of teachers: " + teacherCount);
             Console.WriteLine("Amount of classes: " + classCount);
+            
+            Console.WriteLine("\n");
+        }
+
+        public static void LoadWithMToN()
+        {
+            Console.WriteLine("(10) Create and load an object with m:n");
+            Console.WriteLine("--------------------------------------");
+
+            Course c = new Course();
+            c.ID = "x.0";
+            c.Name = "Demons 1";
+            c.Teacher = Orm.Get<Teacher>("t.0");
+
+            Student s = new Student();
+            s.ID = "s.0";
+            s.Name = "Aalo";
+            s.FirstName = "Alice";
+            s.Gender = Gender.Female;
+            s.BirthDate = new DateTime(1990, 1, 12);
+            s.Grade = 1;
+            Orm.Save(s);
+
+            c.Students.Add(s);
+
+            s = new Student();
+            s.ID = "s.1";
+            s.Name = "Bumblebee";
+            s.FirstName = "Bernard";
+            s.Gender = Gender.Male;
+            s.BirthDate = new DateTime(1991, 9, 23);
+            s.Grade = 2;
+            Orm.Save(s);
+
+            c.Students.Add(s);
+
+            Orm.Save(c);
+
+            c = Orm.Get<Course>("x.0");
+
+            Console.WriteLine("Students in " + c.Name + ":");
+            foreach(Student i in c.Students)
+            {
+                Console.WriteLine(i.FirstName + " " + i.Name);
+            }
+
+            Console.WriteLine("\n");
+        }
+        
+        public static void LoadModifyWithMToN()
+        {
+            Console.WriteLine("(11) Modify an object with m:n");
+            Console.WriteLine("--------------------------------------");
+
+            Course c = Orm.Get<Course>("x.0");
+
+            Student s = new Student();
+            s.ID = "s.2";
+            s.Name = "Carlo";
+            s.FirstName = "Charles";
+            s.Gender = Gender.Male;
+            s.BirthDate = new DateTime(2000, 4, 7);
+            s.Grade = 4;
+            Orm.Save(s);
+
+            c.Students.Add(s);
+            Orm.Save(c);
+
+            c = Orm.Get<Course>("x.0");
+
+            Console.WriteLine("Students in " + c.Name + ":");
+            foreach(Student i in c.Students)
+            {
+                Console.WriteLine(i.FirstName + " " + i.Name);
+            }
+
+            Console.WriteLine("\n");
         }
     }
 }

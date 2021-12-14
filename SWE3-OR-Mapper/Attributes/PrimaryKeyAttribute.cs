@@ -7,5 +7,6 @@ using SWE3_OR_Mapper.Attributes;
 
 namespace SWE3_OR_Mapper.Attributes
 {
+    /// <summary> This attribute marks a property as a primary key field </summary>
     public class PrimaryKeyAttribute : FieldAttribute { }
 }

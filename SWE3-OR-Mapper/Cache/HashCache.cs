@@ -69,7 +69,7 @@ namespace SWE3_OR_Mapper.Cache
             base.Set(obj);
             if (obj != null)
             {
-                GetHash(obj.GetType()).Add(obj.GetEntity().PrimaryKey.GetValue(obj), GenerateHash(obj));
+                GetHash(obj.GetType())[obj.GetEntity().PrimaryKey.GetValue(obj)] = GenerateHash(obj);
             }
         }
 
@@ -86,7 +86,7 @@ namespace SWE3_OR_Mapper.Cache
 
             if (hash.ContainsKey(pk))
             {
-                return hash[pk] == GenerateHash(obj);
+                return hash[pk] != GenerateHash(obj);
             }
 
             return true;

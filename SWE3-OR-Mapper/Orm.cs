@@ -102,6 +102,8 @@ namespace SWE3_OR_Mapper
             {
                 Cache.Set(obj);
             }
+            
+            foreach(__Field i in ent.Externals) { i.UpdateReferences(obj); }
         }
 
         public static int Count<T>()
@@ -267,7 +269,11 @@ namespace SWE3_OR_Mapper
                 }
                 readerObjects.Add(reader.GetValue(reader.GetOrdinal(i.ColumnName)));
             }
-            reader.Close();
+
+            if (ent.Externals.Length > 0)
+            {
+                reader.Close();
+            }
 
             foreach (__Field i in ent.Internals)
             {
@@ -323,6 +329,34 @@ namespace SWE3_OR_Mapper
                 throw new Exception("No data.");
             }
             return obj;
+        }
+        
+        internal static void FillList(Type t, object list, IDataReader re)
+        {
+            while(re.Read())
+            {
+                list.GetType().GetMethod("Add").Invoke(list, new object[] { CreateObject(t, re) });
+            }
+        }
+        
+        internal static void FillList(Type t, object list, string sql, IEnumerable<Tuple<string, object>> parameters)
+        {
+            IDbCommand cmd = Connection.CreateCommand();
+            cmd.CommandText = sql;
+
+            foreach(Tuple<string, object> i in parameters)
+            {
+                IDataParameter p = cmd.CreateParameter();
+                p.ParameterName = i.Item1;
+                p.Value = i.Item2;
+                cmd.Parameters.Add(p);
+            }
+
+            IDataReader re = cmd.ExecuteReader();
+            FillList(t, list, re);
+            re.Close();
+            re.Dispose();
+            cmd.Dispose();
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -67,6 +68,22 @@ namespace SWE3_OR_Mapper.MetaModel
         {
             get; internal set;
         } = false;
+        
+        
+        
+        internal string FkSql
+        {
+            get
+            {
+                if(IsManyToMany)
+                {
+                    return Type.GenericTypeArguments[0].GetEntity().GetSQLQuery() + 
+                           " WHERE ID IN (SELECT " + RemoteColumnName + " FROM " + AssignmentTable + " WHERE " + ColumnName + " = :fk)";
+                }
+
+                return Type.GenericTypeArguments[0].GetEntity().GetSQLQuery() + " WHERE " + ColumnName + " = :fk";
+            }
+        }
 
 
 
@@ -196,6 +213,93 @@ namespace SWE3_OR_Mapper.MetaModel
             cmd.Dispose();
 
             return list;
+        }
+        
+        public void UpdateReferences(object obj)
+        {
+            if(!IsExternal) return;
+
+            Type innerType = Type.GetGenericArguments()[0];
+            __Entity innerEntity = innerType.GetEntity();
+            object pk = Entity.PrimaryKey.ToColumnType(Entity.PrimaryKey.GetValue(obj));
+
+            if(IsManyToMany)
+            {
+                IDbCommand cmd = Orm.Connection.CreateCommand();
+                cmd.CommandText = ("DELETE FROM " + AssignmentTable + " WHERE " + ColumnName + " = :pk");
+                IDataParameter p = cmd.CreateParameter();
+                p.ParameterName = ":pk";
+                p.Value = pk;
+                cmd.Parameters.Add(p);
+
+                cmd.ExecuteNonQuery();
+                cmd.Dispose();
+
+                if(GetValue(obj) != null)
+                {
+                    foreach(object i in (IEnumerable) GetValue(obj))
+                    {
+                        cmd = Orm.Connection.CreateCommand();
+                        cmd.CommandText = ("INSERT INTO " + AssignmentTable + "(" + ColumnName + ", " + RemoteColumnName + ") VALUES (:pk, :fk)");
+                        p = cmd.CreateParameter();
+                        p.ParameterName = ":pk";
+                        p.Value = pk;
+                        cmd.Parameters.Add(p);
+
+                        p = cmd.CreateParameter();
+                        p.ParameterName = ":fk";
+                        p.Value = innerEntity.PrimaryKey.ToColumnType(innerEntity.PrimaryKey.GetValue(i));
+                        cmd.Parameters.Add(p);
+
+                        cmd.ExecuteNonQuery();
+                        cmd.Dispose();
+                    }
+                }
+            }
+            else
+            {
+                __Field remoteField = innerEntity.GetFieldForColumn(ColumnName);
+
+                if(remoteField.IsNullable)
+                {
+                    try
+                    {
+                        IDbCommand cmd = Orm.Connection.CreateCommand();
+                        cmd.CommandText = ("UPDATE " + innerEntity.TableName + " SET " + ColumnName + " = NULL WHERE " + ColumnName + " = :fk");
+                        IDataParameter p = cmd.CreateParameter();
+                        p.ParameterName = ":fk";
+                        p.Value = pk;
+                        cmd.Parameters.Add(p);
+
+                        cmd.ExecuteNonQuery();
+                        cmd.Dispose();
+                    }
+                    catch(Exception) {}
+                }
+
+                if(GetValue(obj) != null)
+                {
+                    foreach(object i in (IEnumerable) GetValue(obj))
+                    {
+                        remoteField.SetValue(i, obj);
+
+                        IDbCommand cmd = Orm.Connection.CreateCommand();
+                        cmd.CommandText = ("UPDATE " + innerEntity.TableName + " SET " + ColumnName + " = :fk WHERE " + innerEntity.PrimaryKey.ColumnName + " = :pk");
+                        IDataParameter p = cmd.CreateParameter();
+                        p.ParameterName = ":fk";
+                        p.Value = pk;
+                        cmd.Parameters.Add(p);
+
+                        p = cmd.CreateParameter();
+                        p.ParameterName = ":pk";
+                        p.Value = innerEntity.PrimaryKey.ToColumnType(innerEntity.PrimaryKey.GetValue(i));
+                        cmd.Parameters.Add(p);
+
+                        cmd.ExecuteNonQuery();
+                        cmd.Dispose();
+                    }
+                }
+            }
         }
     }
 }
