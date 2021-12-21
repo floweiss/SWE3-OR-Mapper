@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Data;
 using System.Linq;
-using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 using SWE3_OR_Mapper.Cache;
@@ -114,6 +113,7 @@ namespace SWE3_OR_Mapper
             IDbCommand cmd = Connection.CreateCommand();
 
             Type type = typeof(T);
+            CreateTable(Activator.CreateInstance(type));
             cmd.CommandText = type.GetEntity().GetCountSQLQuery();
 
             IDataReader reader = cmd.ExecuteReader();
@@ -134,6 +134,7 @@ namespace SWE3_OR_Mapper
             IDbCommand cmd = Connection.CreateCommand();
             
             Type type = typeof(T);
+            CreateTable(Activator.CreateInstance(type));
             cmd.CommandText = type.GetEntity().GetSQLQuery() + " WHERE " + type.GetEntity().PrimaryKey.ColumnName + " = :pk";
 
             IDataParameter p = cmd.CreateParameter();
@@ -193,6 +194,7 @@ namespace SWE3_OR_Mapper
             IDbCommand cmd = Connection.CreateCommand();
 
             Type type = typeof(T);
+            CreateTable(Activator.CreateInstance(type));
             cmd.CommandText = type.GetEntity().GetSQLQuery();
 
             List<T> objects = new List<T>();
