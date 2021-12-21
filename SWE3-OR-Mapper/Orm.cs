@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Data;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 using SWE3_OR_Mapper.Cache;
@@ -40,6 +42,7 @@ namespace SWE3_OR_Mapper
             }
 
             __Entity ent = obj.GetEntity();
+            CreateTable(obj);
 
             IDbCommand cmd = Connection.CreateCommand();
             cmd.CommandText = ("INSERT INTO " + ent.TableName + " (");
@@ -357,6 +360,77 @@ namespace SWE3_OR_Mapper
             re.Close();
             re.Dispose();
             cmd.Dispose();
+        }
+
+        internal static void CreateTable(Object obj)
+        {
+            __Entity ent = obj.GetEntity();
+            IDbCommand cmd = Connection.CreateCommand();
+            cmd.CommandText = ("CREATE TABLE IF NOT EXISTS " + ent.TableName + " (");
+
+            int i = 0;
+            foreach (__Field field in ent.Internals)
+            {
+                cmd.CommandText += field.ColumnName.ToLower() + " " + field.ConvertToFieldType();
+                i++;
+                if (field.IsPrimaryKey)
+                {
+                    cmd.CommandText += " NOT NULL PRIMARY KEY";
+                }
+                if (i < ent.Internals.Length)
+                {
+                    cmd.CommandText += ", ";
+                }
+            }
+
+            i = 0;
+            string assignmentTableSql = null;
+            List<object> externals = new List<object>();
+            foreach (__Field field in ent.Externals)
+            {
+                if (field.AssignmentTable != null)
+                {
+                    assignmentTableSql += "CREATE TABLE IF NOT EXISTS " + field.AssignmentTable + "(" +
+                                         field.ColumnName + " " + ent.PrimaryKey.ConvertToFieldType() + ", " +
+                                         field.RemoteColumnName + " ";
+                    if (field.Type.GetInterface(nameof(IEnumerable)) != null)
+                    {
+                        assignmentTableSql += Activator.CreateInstance(field.Type.GetGenericArguments()[0]).GetEntity().PrimaryKey
+                            .ConvertToFieldType();
+                    }
+                    else
+                    {
+                        assignmentTableSql += field.Type;
+                    }
+
+                    assignmentTableSql += ")";
+                }
+                else
+                {
+                    if (field.Type.GetInterface(nameof(IEnumerable)) != null)
+                    {
+                        externals.Add(Activator.CreateInstance(field.Type.GetGenericArguments()[0]));
+                    }
+                    else
+                    {
+                        externals.Add(Activator.CreateInstance(field.Type));
+                    }
+                }
+            }
+            
+            cmd.CommandText += ")";
+            cmd.ExecuteNonQuery();
+            cmd.Dispose();
+
+            if (assignmentTableSql != null)
+            {
+                IDbCommand cmdAssignment = Connection.CreateCommand();
+                cmdAssignment.CommandText = assignmentTableSql;
+                cmdAssignment.ExecuteNonQuery();
+                cmdAssignment.Dispose();
+            }
+
+            externals.ForEach(CreateTable);
         }
     }
 }

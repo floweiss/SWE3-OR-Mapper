@@ -179,6 +179,36 @@ namespace SWE3_OR_Mapper.MetaModel
             return value;
         }
 
+        public string ConvertToFieldType()
+        {
+            if (ColumnType == typeof(bool))
+            {
+                return "boolean";
+            }
+            if (ColumnType == typeof(short))
+            {
+                return "smallint";
+            }
+            if (ColumnType == typeof(int))
+            {
+                return "integer";
+            }
+            if (ColumnType == typeof(long))
+            {
+                return "bigint";
+            }
+            if (ColumnType.IsEnum)
+            {
+                return "integer";
+            }
+            if (ColumnType == typeof(DateTime))
+            {
+                return "date";
+            }
+
+            return "varchar";
+        }
+
         public object FillExternals(object list, object obj)
         {
             IDbCommand cmd = Orm.Connection.CreateCommand();
