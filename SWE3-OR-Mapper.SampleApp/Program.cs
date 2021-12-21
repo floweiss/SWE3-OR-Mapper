@@ -4,7 +4,9 @@ using System.Linq;
 using System.Threading;
 using Npgsql;
 using SWE3_OR_Mapper.Cache;
+using SWE3_OR_Mapper.SampleApp.Library;
 using SWE3_OR_Mapper.SampleApp.School;
+using Gender = SWE3_OR_Mapper.SampleApp.Library.Gender;
 
 namespace SWE3_OR_Mapper.SampleApp
 {
@@ -34,17 +36,17 @@ namespace SWE3_OR_Mapper.SampleApp
         {
             Console.WriteLine("(1) Insert object");
             Console.WriteLine("-----------------");
+            
+            Location l = new Location();
+            l.ID = "l.0";
+            l.Name = "Vienna City Library";
+            l.Country = "Austria";
+            l.City = "Vienna";
+            l.PostalCode = 1010;
+            l.Street = "Kingstreet";
+            l.HouseNumber = 25;
+            Orm.Save(l);
 
-            Teacher t = new Teacher();
-            t.ID = "t.0";
-            t.FirstName = "Jerry";
-            t.Name = "Mouse";
-            t.Gender = Gender.Male;
-            t.BirthDate = new DateTime(1970, 8, 18);
-            t.HireDate = new DateTime(2015, 6, 20);
-            t.Salary = 50000;
-
-            Orm.Save(t);
             Console.WriteLine("\n");
         }
 
@@ -53,17 +55,17 @@ namespace SWE3_OR_Mapper.SampleApp
             Console.WriteLine("(2) Load and modify object");
             Console.WriteLine("--------------------------");
 
-            Teacher t = Orm.Get<Teacher>("t.0");
+            Location l = Orm.Get<Location>("l.0");
 
             Console.WriteLine();
-            Console.WriteLine("Salary for " + t.FirstName + " " + t.Name + " is " + t.Salary.ToString() + " Pesos.");
+            Console.WriteLine($"The {l.Name} is in {l.City}. The address is {l.Street} {l.HouseNumber}.");
 
-            Console.WriteLine("Give rise of 12000.");
-            t.Salary += 12000;
+            Console.WriteLine("Change house number.");
+            l.HouseNumber = 33;
 
-            Console.WriteLine("Salary for " + t.FirstName + " " + t.Name + " is now " + t.Salary.ToString() + " Pesos.");
+            Console.WriteLine($"The {l.Name} is in {l.City}. The address is {l.Street} {l.HouseNumber}.");
 
-            Orm.Save(t);
+            Orm.Save(l);
 
             Console.WriteLine("\n");
         }
@@ -73,34 +75,37 @@ namespace SWE3_OR_Mapper.SampleApp
             Console.WriteLine("(3) Create and load an object with foreign key");
             Console.WriteLine("----------------------------------------------");
 
-            Teacher teacher = Orm.Get<Teacher>("t.0");
+            Location l = Orm.Get<Location>("l.0");
 
-            Class c = new Class();
-            c.ID = "c.0";
-            c.Name = "Demonology 101";
-            c.Semester = 3;
-            c.Teacher = teacher;
+            Employee e = new Employee();
+            e.ID = "e.0";
+            e.FirstName = "Jerry";
+            e.Name = "Mouse";
+            e.Gender = Gender.Male;
+            e.BirthDate = new DateTime(1970, 4, 30);
+            e.HireDate = new DateTime(2015, 6, 20);
+            e.Salary = 62000;
+            e.Location = l;
+            Orm.Save(e);
 
-            Orm.Save(c);
-
-            c = Orm.Get<Class>("c.0");
-            Console.WriteLine((c.Teacher.Gender == Gender.Male ? "Mr. " : "Ms. ") + c.Teacher.Name + " teaches " + c.Name + ".");
+            e = Orm.Get<Employee>("e.0");
+            Console.WriteLine((e.Gender == Gender.Male ? "Mr. " : "Ms. ") + e.Name + " works in the " + e.Location.Name + ".");
 
             Console.WriteLine("\n");
         }
 
         public static void LoadWithFK()
         {
-            Console.WriteLine("(4) Load teacher and show classes");
+            Console.WriteLine("(4) Load Location and show employees");
             Console.WriteLine("---------------------------------");
 
-            Teacher t1 = Orm.Get<Teacher>("t.0");
+            Location l = Orm.Get<Location>("l.0");
 
-            Console.WriteLine(t1.FirstName + " " + t1.Name + " teaches:");
+            Console.WriteLine("Following employees work at the " + l.Name + ":");
 
-            foreach (Class i in t1.Classes)
+            foreach (Employee e in l.Employees)
             {
-                Console.WriteLine(i.Name);
+                Console.WriteLine(e.FirstName + " " + e.Name);
             }
 
             Console.WriteLine("\n");
@@ -114,16 +119,16 @@ namespace SWE3_OR_Mapper.SampleApp
             Console.WriteLine("\rWithout cache:");
             for (int i = 0; i <= 5; i++)
             {
-                Teacher t = Orm.Get<Teacher>("t.0");
-                Console.WriteLine("Object [" + t.ID + "] instance no: " + t.InstanceNumber.ToString());
+                Employee e = Orm.Get<Employee>("e.0");
+                Console.WriteLine("Object [" + e.ID + "] instance no: " + e.InstanceNumber.ToString());
             }
 
             Console.WriteLine("\n\rWith cache:");
             Orm.Cache = new HashCache();
             for (int i = 0; i <= 5; i++)
             {
-                Teacher t = Orm.Get<Teacher>("t.0");
-                Console.WriteLine("Object [" + t.ID + "] instance no: " + t.InstanceNumber.ToString());
+                Employee e = Orm.Get<Employee>("e.0");
+                Console.WriteLine("Object [" + e.ID + "] instance no: " + e.InstanceNumber.ToString());
             }
 
             Orm.Cache = null;
@@ -137,13 +142,13 @@ namespace SWE3_OR_Mapper.SampleApp
             Console.WriteLine("-----------------------");
 
             Orm.Cache = new HashCache();
-            Teacher t = Orm.Get<Teacher>("t.0");
-            Console.WriteLine("Object [" + t.ID + "] (" + t.Salary + ") instance no: " + t.InstanceNumber.ToString());
+            Employee e = Orm.Get<Employee>("e.0");
+            Console.WriteLine("Object [" + e.ID + "] (" + e.Salary + ") instance no: " + e.InstanceNumber.ToString());
 
-            t.Salary += 500;
+            e.Salary += 500;
 
-            Teacher t2 = Orm.Get<Teacher>("t.0");
-            Console.WriteLine("Object [" + t2.ID + "] (" + t2.Salary + ") instance no: " + t2.InstanceNumber.ToString());
+            Employee e2 = Orm.Get<Employee>("e.0");
+            Console.WriteLine("Object [" + e2.ID + "] (" + e2.Salary + ") instance no: " + e2.InstanceNumber.ToString());
 
             Orm.Cache = null;
             Console.WriteLine("\n");
@@ -154,30 +159,32 @@ namespace SWE3_OR_Mapper.SampleApp
             Console.WriteLine("(7) Get All");
             Console.WriteLine("-----------------");
 
-            Teacher t = new Teacher();
-            t.ID = "t.1";
-            t.FirstName = "Micky";
-            t.Name = "Mouse";
-            t.Gender = Gender.Male;
-            t.BirthDate = new DateTime(1975, 8, 18);
-            t.HireDate = new DateTime(2016, 6, 20);
-            t.Salary = 40000;
-            Orm.Save(t);
+            Employee e = new Employee();
+            e.ID = "e.1";
+            e.FirstName = "Micky";
+            e.Name = "Mouse";
+            e.Gender = Gender.Male;
+            e.BirthDate = new DateTime(1975, 8, 18);
+            e.HireDate = new DateTime(2016, 6, 20);
+            e.Salary = 40000;
+            e.Location = Orm.Get<Location>("l.0");
+            Orm.Save(e);
 
-            t = new Teacher();
-            t.ID = "t.2";
-            t.FirstName = "Minnie";
-            t.Name = "Mouse";
-            t.Gender = Gender.Female;
-            t.BirthDate = new DateTime(1980, 8, 18);
-            t.HireDate = new DateTime(2017, 6, 20);
-            t.Salary = 45000;
-            Orm.Save(t);
+            e = new Employee();
+            e.ID = "e.2";
+            e.FirstName = "Minnie";
+            e.Name = "Mouse";
+            e.Gender = Gender.Female;
+            e.BirthDate = new DateTime(1980, 8, 18);
+            e.HireDate = new DateTime(2017, 6, 20);
+            e.Salary = 45000;
+            e.Location = Orm.Get<Location>("l.0");
+            Orm.Save(e);
 
-            IEnumerable<Teacher> teacherList = Orm.GetAll<Teacher>();
-            foreach (Teacher teacher in teacherList)
+            IEnumerable<Employee> employees = Orm.GetAll<Employee>();
+            foreach (Employee employee in employees)
             {
-                Console.WriteLine("Salary for " + teacher.FirstName + " " + teacher.Name + " is " + teacher.Salary.ToString() + " Pesos.");
+                Console.WriteLine("Salary for " + employee.FirstName + " " + employee.Name + " is " + employee.Salary.ToString() + " Dollars.");
             }
 
             Console.WriteLine("\n");
@@ -185,44 +192,44 @@ namespace SWE3_OR_Mapper.SampleApp
 
         public static void Operations()
         {
-            Console.WriteLine("(8) Get specific teachers");
+            Console.WriteLine("(8) Get specific employees");
             Console.WriteLine("-----------------");
 
-            IEnumerable<Teacher> teacherList = Orm.GetAll<Teacher>();
+            IEnumerable<Employee> employees = Orm.GetAll<Employee>();
             
-            Console.WriteLine("Female teachers:");
-            foreach (Teacher teacher in teacherList.Where(t => t.Gender != Gender.Male))
+            Console.WriteLine("Female employees:");
+            foreach (Employee employee in employees.Where(e => e.Gender != Gender.Male))
             {
-                Console.WriteLine("Salary for " + teacher.FirstName + " " + teacher.Name + " is " + teacher.Salary.ToString() + " Pesos.");
+                Console.WriteLine("Salary for " + employee.FirstName + " " + employee.Name + " is " + employee.Salary.ToString() + " Dollars.");
             }
             
-            Console.WriteLine("\nFemale teachers OR teachers earning more than 50000:");
-            foreach (Teacher teacher in teacherList.Where(t => t.Gender == Gender.Female || t.Salary > 50000))
+            Console.WriteLine("\nFemale employees OR employees earning more than 50000:");
+            foreach (Employee employee in employees.Where(e => e.Gender == Gender.Female || e.Salary > 50000))
             {
-                Console.WriteLine("Salary for " + teacher.FirstName + " " + teacher.Name + " is " + teacher.Salary.ToString() + " Pesos. Gender: " + teacher.Gender);
+                Console.WriteLine("Salary for " + employee.FirstName + " " + employee.Name + " is " + employee.Salary.ToString() + " Dollars. Gender: " + employee.Gender);
             }
             
-            Console.WriteLine("\nTeachers with first name starting with M:");
-            foreach (Teacher teacher in teacherList.Where(t => t.FirstName.StartsWith("M")))
+            Console.WriteLine("\nEmployees with first name starting with M:");
+            foreach (Employee employee in employees.Where(e => e.FirstName.StartsWith("M")))
             {
-                Console.WriteLine(teacher.FirstName + " " + teacher.Name);
+                Console.WriteLine(employee.FirstName + " " + employee.Name);
             }
 
-            Console.WriteLine("\nTeachers with first name containing y:");
-            foreach (Teacher teacher in teacherList.Where(t => t.FirstName.ToLower().Contains("y")))
+            Console.WriteLine("\nEmployees with first name containing y:");
+            foreach (Employee employee in employees.Where(e => e.FirstName.ToLower().Contains("y")))
             {
-                Console.WriteLine(teacher.FirstName + " " + teacher.Name);
+                Console.WriteLine(employee.FirstName + " " + employee.Name);
             }
             
-            var teacherQuery =
-                from t in Orm.GetAll<Teacher>()
-                where t.Salary > 42000
-                orderby t.Salary descending
-                select t;
-            Console.WriteLine("\nTeachers earning more than 42000 with LINQ:");
-            foreach (Teacher teacher in teacherQuery)
+            var employeeQuery =
+                from e in Orm.GetAll<Employee>()
+                where e.Salary > 42000
+                orderby e.Salary descending
+                select e;
+            Console.WriteLine("\nEmployees earning more than 42000 with LINQ:");
+            foreach (Employee employee in employeeQuery)
             {
-                Console.WriteLine("Salary for " + teacher.FirstName + " " + teacher.Name + " is " + teacher.Salary.ToString() + " Pesos. Gender: " + teacher.Gender);
+                Console.WriteLine("Salary for " + employee.FirstName + " " + employee.Name + " is " + employee.Salary.ToString() + " Dollars. Gender: " + employee.Gender);
             }
 
             Console.WriteLine("\n");
@@ -233,11 +240,11 @@ namespace SWE3_OR_Mapper.SampleApp
             Console.WriteLine("(9) Count objects");
             Console.WriteLine("-----------------");
 
-            int teacherCount = Orm.Count<Teacher>();
-            int classCount = Orm.Count<Class>();
+            int employeeCount = Orm.Count<Employee>();
+            int locationCount = Orm.Count<Location>();
 
-            Console.WriteLine("Amount of teachers: " + teacherCount);
-            Console.WriteLine("Amount of classes: " + classCount);
+            Console.WriteLine("Amount of employees: " + employeeCount);
+            Console.WriteLine("Amount of locations: " + locationCount);
             
             Console.WriteLine("\n");
         }
@@ -247,41 +254,38 @@ namespace SWE3_OR_Mapper.SampleApp
             Console.WriteLine("(10) Create and load an object with m:n");
             Console.WriteLine("--------------------------------------");
 
-            Course c = new Course();
-            c.ID = "x.0";
-            c.Name = "Demons 1";
-            c.Teacher = Orm.Get<Teacher>("t.0");
+            Author a = new Author();
+            a.ID = "a.0";
+            a.Name = "Aalo";
+            a.FirstName = "Alice";
+            a.Gender = Gender.Female;
+            a.BirthDate = new DateTime(1990, 1, 12);
+            Orm.Save(a);
+            
+            Book b = new Book();
+            b.ID = "b.0";
+            b.Title = "Computer Science 5";
+            b.PublicationDate = new DateTime(2010, 4, 6);
+            Orm.Save(b);
 
-            Student s = new Student();
-            s.ID = "s.0";
-            s.Name = "Aalo";
-            s.FirstName = "Alice";
-            s.Gender = Gender.Female;
-            s.BirthDate = new DateTime(1990, 1, 12);
-            s.Grade = 1;
-            Orm.Save(s);
+            a.Books.Add(b);
+            Orm.Save(a);
+            
+            b = new Book();
+            b.ID = "b.1";
+            b.Title = "Maths 101";
+            b.PublicationDate = new DateTime(2014, 12, 22);
+            Orm.Save(b);
+            
+            a.Books.Add(b);
+            Orm.Save(a);
 
-            c.Students.Add(s);
+            a = Orm.Get<Author>("a.0");
 
-            s = new Student();
-            s.ID = "s.1";
-            s.Name = "Bumblebee";
-            s.FirstName = "Bernard";
-            s.Gender = Gender.Male;
-            s.BirthDate = new DateTime(1991, 9, 23);
-            s.Grade = 2;
-            Orm.Save(s);
-
-            c.Students.Add(s);
-
-            Orm.Save(c);
-
-            c = Orm.Get<Course>("x.0");
-
-            Console.WriteLine("Students in " + c.Name + ":");
-            foreach(Student i in c.Students)
+            Console.WriteLine("Books written by " + a.Name + " " + a.FirstName + ":");
+            foreach(Book i in a.Books)
             {
-                Console.WriteLine(i.FirstName + " " + i.Name);
+                Console.WriteLine(i.Title);
             }
 
             Console.WriteLine("\n");
@@ -292,28 +296,43 @@ namespace SWE3_OR_Mapper.SampleApp
             Console.WriteLine("(11) Modify an object with m:n");
             Console.WriteLine("--------------------------------------");
 
-            Course c = Orm.Get<Course>("x.0");
+            Author a = Orm.Get<Author>("a.0");
 
-            Student s = new Student();
-            s.ID = "s.2";
-            s.Name = "Carlo";
-            s.FirstName = "Charles";
-            s.Gender = Gender.Male;
-            s.BirthDate = new DateTime(2000, 4, 7);
-            s.Grade = 4;
-            Orm.Save(s);
+            Book b = new Book();
+            b.ID = "b.2";
+            b.Title = "Chemistry for Dummies";
+            b.PublicationDate = new DateTime(2019, 2, 17);
+            Orm.Save(b);
 
-            c.Students.Add(s);
-            Orm.Save(c);
+            a.Books.Add(b);
+            Orm.Save(a);
 
-            c = Orm.Get<Course>("x.0");
+            a = Orm.Get<Author>("a.0");
 
-            Console.WriteLine("Students in " + c.Name + ":");
-            foreach(Student i in c.Students)
+            Console.WriteLine("Books written by " + a.Name + " " + a.FirstName + ":");
+            foreach(Book i in a.Books)
             {
-                Console.WriteLine(i.FirstName + " " + i.Name);
+                Console.WriteLine(i.Title);
             }
+            
+            a = new Author();
+            a.ID = "a.1";
+            a.Name = "Bernard";
+            a.FirstName = "Bumblebee";
+            a.Gender = Gender.Male;
+            a.BirthDate = new DateTime(1992, 6, 10);
+            a.Books.Add(b);
+            Orm.Save(a);
 
+            a = Orm.Get<Author>("a.1");
+            
+            Console.WriteLine("");
+            Console.WriteLine("Books written by " + a.Name + " " + a.FirstName + ":");
+            foreach(Book i in a.Books)
+            {
+                Console.WriteLine(i.Title);
+            }
+            
             Console.WriteLine("\n");
         }
     }
