@@ -125,11 +125,22 @@ namespace SWE3_OR_Mapper
             foreach (__Field externalField in ent.Externals)
             {
                 IDbCommand cmdExt = Connection.CreateCommand();
-                cmdExt.CommandText = "DELETE FROM " + externalField.AssignmentTable + " WHERE " + externalField.ColumnName + " = :fk";
                 IDataParameter pExt = cmdExt.CreateParameter();
-                pExt.ParameterName = (":fk");
-                pExt.Value = ent.PrimaryKey.GetValue(obj);
-                cmdExt.Parameters.Add(pExt);
+                if (externalField.IsManyToMany)
+                {
+                    cmdExt.CommandText = "DELETE FROM " + externalField.AssignmentTable + " WHERE " + externalField.ColumnName + " = :fk";
+                    pExt.ParameterName = (":fk");
+                    pExt.Value = ent.PrimaryKey.GetValue(obj);
+                    cmdExt.Parameters.Add(pExt);
+                }
+                else
+                {
+                    cmdExt.CommandText = externalField.DeleteFkSql;
+                    pExt.ParameterName = (":fk");
+                    pExt.Value = ent.PrimaryKey.GetValue(obj);
+                    cmdExt.Parameters.Add(pExt);
+                }
+                
                 cmdExt.ExecuteNonQuery();
                 cmdExt.Dispose();
             }

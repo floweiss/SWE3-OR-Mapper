@@ -29,6 +29,7 @@ namespace SWE3_OR_Mapper.SampleApp
             LoadWithMToN();
             LoadModifyWithMToN();
             Delete();
+            DeleteMtoN();
 
             Orm.Connection.Close();
         }
@@ -339,7 +340,49 @@ namespace SWE3_OR_Mapper.SampleApp
 
         public static void Delete()
         {
-            Console.WriteLine("(11) Delete an object with m:n");
+            Console.WriteLine("(11) Delete an object");
+            Console.WriteLine("--------------------------------------");
+
+            Employee e = Orm.Get<Employee>("e.2");
+            Orm.Delete(e);
+            Employee e2 = Orm.Get<Employee>("e.2");
+            if (e2 != null)
+            {
+                Console.WriteLine("Employee found, not deleted!");
+            }
+            else
+            {
+                Console.WriteLine("Employee not found, deleted successfully!");
+            }
+            
+            Location l = Orm.Get<Location>("l.0");
+            Orm.Delete(l);
+            Location l2 = Orm.Get<Location>("l.0");
+            if (l2 != null)
+            {
+                Console.WriteLine("Location found, not deleted!");
+            }
+            else
+            {
+                Console.WriteLine("Location not found, deleted successfully!");
+            }
+            
+            e = Orm.Get<Employee>("e.0");
+            if (e == null)
+            {
+                Console.WriteLine("Employee not found because location got removed!");
+            }
+            else
+            {
+                Console.WriteLine("Employee found... something went wrong!");
+            }
+
+            Console.WriteLine("\n");
+        }
+        
+        public static void DeleteMtoN()
+        {
+            Console.WriteLine("(12) Delete an object with m:n");
             Console.WriteLine("--------------------------------------");
 
             Author a = Orm.Get<Author>("a.1");

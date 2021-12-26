@@ -71,12 +71,17 @@ namespace SWE3_OR_Mapper.MetaModel
         
         
         
-        internal string FkSql
+        internal string DeleteFkSql
         {
             get
             {
-                return "SELECT " + Type.GenericTypeArguments[0].GetEntity().PrimaryKey.ColumnName + " FROM " +
-                       Type.GenericTypeArguments[0].GetEntity().TableName;
+                if(IsManyToMany)
+                {
+                    return "SELECT " + Type.GenericTypeArguments[0].GetEntity().PrimaryKey.ColumnName + " FROM " +
+                           Type.GenericTypeArguments[0].GetEntity().TableName;
+                }
+
+                return "DELETE FROM " + Type.GenericTypeArguments[0].GetEntity().TableName + " WHERE " + ColumnName + " = :fk";
             }
         }
 
@@ -240,7 +245,7 @@ namespace SWE3_OR_Mapper.MetaModel
             if (IsManyToMany)
             {
                 IDbCommand cmdExt = Orm.Connection.CreateCommand();
-                cmdExt.CommandText = "DELETE FROM " + AssignmentTable + " WHERE " + RemoteColumnName + " NOT IN (" + FkSql + ")";
+                cmdExt.CommandText = "DELETE FROM " + AssignmentTable + " WHERE " + RemoteColumnName + " NOT IN (" + DeleteFkSql + ")";
                 IDataParameter pExt = cmd.CreateParameter();
                 pExt.ParameterName = ":fk";
                 pExt.Value = Entity.PrimaryKey.GetValue(obj);
