@@ -5,7 +5,6 @@ using System.Threading;
 using Npgsql;
 using SWE3_OR_Mapper.Cache;
 using SWE3_OR_Mapper.SampleApp.Library;
-using SWE3_OR_Mapper.SampleApp.School;
 using Gender = SWE3_OR_Mapper.SampleApp.Library.Gender;
 
 namespace SWE3_OR_Mapper.SampleApp

@@ -1,6 +1,5 @@
 ﻿using System;
 using SWE3_OR_Mapper.Attributes;
-using SWE3_OR_Mapper.SampleApp.School;
 
 namespace SWE3_OR_Mapper.SampleApp.Library
 {
