@@ -107,13 +107,44 @@ namespace SWE3_OR_Mapper
             
             foreach(__Field i in ent.Externals) { i.UpdateReferences(obj); }
         }
+        
+        public static void Delete(object obj)
+        {
+            __Entity ent = obj.GetEntity();
+            CreateTable(obj);
+            IDbCommand cmd = Connection.CreateCommand();
+            cmd.CommandText = "DELETE FROM " + ent.TableName + " WHERE " + ent.PrimaryKey.ColumnName + " = :pk";
+
+            IDataParameter p = cmd.CreateParameter();
+            p.ParameterName = (":pk");
+            p.Value = ent.PrimaryKey.GetValue(obj);
+            cmd.Parameters.Add(p);
+            cmd.ExecuteNonQuery();
+            cmd.Dispose();
+
+            foreach (__Field externalField in ent.Externals)
+            {
+                IDbCommand cmdExt = Connection.CreateCommand();
+                cmdExt.CommandText = "DELETE FROM " + externalField.AssignmentTable + " WHERE " + externalField.ColumnName + " = :fk";
+                IDataParameter pExt = cmdExt.CreateParameter();
+                pExt.ParameterName = (":fk");
+                pExt.Value = ent.PrimaryKey.GetValue(obj);
+                cmdExt.Parameters.Add(pExt);
+                cmdExt.ExecuteNonQuery();
+                cmdExt.Dispose();
+            }
+
+            if (Cache != null)
+            {
+                Cache.Remove(obj);
+            }
+        }
 
         public static int Count<T>()
         {
-            IDbCommand cmd = Connection.CreateCommand();
-
             Type type = typeof(T);
             CreateTable(Activator.CreateInstance(type));
+            IDbCommand cmd = Connection.CreateCommand();
             cmd.CommandText = type.GetEntity().GetCountSQLQuery();
 
             IDataReader reader = cmd.ExecuteReader();
@@ -131,10 +162,9 @@ namespace SWE3_OR_Mapper
 
         public static T Get<T>(object pk)
         {
-            IDbCommand cmd = Connection.CreateCommand();
-            
             Type type = typeof(T);
             CreateTable(Activator.CreateInstance(type));
+            IDbCommand cmd = Connection.CreateCommand();
             cmd.CommandText = type.GetEntity().GetSQLQuery() + " WHERE " + type.GetEntity().PrimaryKey.ColumnName + " = :pk";
 
             IDataParameter p = cmd.CreateParameter();
@@ -143,6 +173,7 @@ namespace SWE3_OR_Mapper
             cmd.Parameters.Add(p);
 
             IDataReader reader = cmd.ExecuteReader();
+            cmd.Dispose();
             object obj = null;
             if (reader.Read())
             {
@@ -156,7 +187,6 @@ namespace SWE3_OR_Mapper
                 else
                 {
                     reader.Close();
-                    cmd.Dispose();
                     return (T)obj;
                 }
 
@@ -179,8 +209,10 @@ namespace SWE3_OR_Mapper
                     i.SetValue(obj, i.FillExternals(list, obj));
                 }
             }
-            
-            cmd.Dispose();
+            else
+            {
+                reader.Close();
+            }
 
             if (Cache != null)
             {
@@ -191,10 +223,9 @@ namespace SWE3_OR_Mapper
 
         public static List<T> GetAll<T>()
         {
-            IDbCommand cmd = Connection.CreateCommand();
-
             Type type = typeof(T);
             CreateTable(Activator.CreateInstance(type));
+            IDbCommand cmd = Connection.CreateCommand();
             cmd.CommandText = type.GetEntity().GetSQLQuery();
 
             List<T> objects = new List<T>();
@@ -364,7 +395,7 @@ namespace SWE3_OR_Mapper
             cmd.Dispose();
         }
 
-        internal static void CreateTable(Object obj)
+        internal static void CreateTable(object obj)
         {
             __Entity ent = obj.GetEntity();
             IDbCommand cmd = Connection.CreateCommand();

@@ -75,13 +75,8 @@ namespace SWE3_OR_Mapper.MetaModel
         {
             get
             {
-                if(IsManyToMany)
-                {
-                    return Type.GenericTypeArguments[0].GetEntity().GetSQLQuery() + 
-                           " WHERE ID IN (SELECT " + RemoteColumnName + " FROM " + AssignmentTable + " WHERE " + ColumnName + " = :fk)";
-                }
-
-                return Type.GenericTypeArguments[0].GetEntity().GetSQLQuery() + " WHERE " + ColumnName + " = :fk";
+                return "SELECT " + Type.GenericTypeArguments[0].GetEntity().PrimaryKey.ColumnName + " FROM " +
+                       Type.GenericTypeArguments[0].GetEntity().TableName;
             }
         }
 
@@ -241,6 +236,18 @@ namespace SWE3_OR_Mapper.MetaModel
             re.Close();
             re.Dispose();
             cmd.Dispose();
+
+            if (IsManyToMany)
+            {
+                IDbCommand cmdExt = Orm.Connection.CreateCommand();
+                cmdExt.CommandText = "DELETE FROM " + AssignmentTable + " WHERE " + RemoteColumnName + " NOT IN (" + FkSql + ")";
+                IDataParameter pExt = cmd.CreateParameter();
+                pExt.ParameterName = ":fk";
+                pExt.Value = Entity.PrimaryKey.GetValue(obj);
+                cmdExt.Parameters.Add(pExt);
+                cmdExt.ExecuteNonQuery();
+                cmdExt.Dispose();
+            }
 
             return list;
         }

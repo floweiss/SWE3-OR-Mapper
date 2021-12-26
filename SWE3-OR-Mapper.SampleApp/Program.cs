@@ -28,6 +28,7 @@ namespace SWE3_OR_Mapper.SampleApp
             Count();
             LoadWithMToN();
             LoadModifyWithMToN();
+            Delete();
 
             Orm.Connection.Close();
         }
@@ -331,6 +332,45 @@ namespace SWE3_OR_Mapper.SampleApp
             foreach(Book i in a.Books)
             {
                 Console.WriteLine(i.Title);
+            }
+            
+            Console.WriteLine("\n");
+        }
+
+        public static void Delete()
+        {
+            Console.WriteLine("(11) Delete an object with m:n");
+            Console.WriteLine("--------------------------------------");
+
+            Author a = Orm.Get<Author>("a.1");
+            Orm.Delete(a);
+            Author a2 = Orm.Get<Author>("a.1");
+            if (a2 != null)
+            {
+                Console.WriteLine("Author found, not deleted!");
+            }
+            else
+            {
+                Console.WriteLine("Author not found, deleted successfully!");
+            }
+            
+            Book b = Orm.Get<Book>("b.2");
+            Orm.Delete(b);
+            Book b2 = Orm.Get<Book>("b.2");
+            if (b2 != null)
+            {
+                Console.WriteLine("Book found, not deleted!");
+            }
+            else
+            {
+                Console.WriteLine("Book not found, deleted successfully!");
+            }
+            
+            a = Orm.Get<Author>("a.0");
+            Console.WriteLine($"Author {a.Name} {a.FirstName} wrote this books:");
+            foreach (Book aBook in a.Books)
+            {
+                Console.WriteLine(aBook.Title);
             }
             
             Console.WriteLine("\n");
