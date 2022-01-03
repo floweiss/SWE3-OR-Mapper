@@ -7,7 +7,7 @@ using SWE3_OR_Mapper.Tests.Library;
 
 namespace SWE3_OR_Mapper.Tests
 {
-    public class SaveGetTests
+    public class ChangeSaveGetWithFKTests
     {
         private string _name;
         private string _id;
@@ -18,12 +18,12 @@ namespace SWE3_OR_Mapper.Tests
             Orm.Connection = new NpgsqlConnection("Host=localhost;Port=5433;Username=swe3-test;Password=Test123;Database=postgres");
             Orm.Connection.Open();
             
+            _id = "e.0";
             _name = "Vienna City Library Test";
-            _id = "l.0";
         }
 
         [Test]
-        public void Test_OrmSave_OneRowInTable()
+        public void Test_OrmSaveWithFK_OneRowInTable()
         {
             Location l = new Location();
             l.ID = _id;
@@ -35,14 +35,25 @@ namespace SWE3_OR_Mapper.Tests
             l.HouseNumber = 25;
             Orm.Save(l);
 
+            Employee e = new Employee();
+            e.ID = _id;
+            e.FirstName = "Jerry";
+            e.Name = "Mouse";
+            e.Gender = Gender.Male;
+            e.BirthDate = new DateTime(1970, 4, 30);
+            e.HireDate = new DateTime(2015, 6, 20);
+            e.Salary = 62000;
+            e.Location = l;
+            Orm.Save(e);
+
             IDbCommand cmd = Orm.Connection.CreateCommand();
-            cmd.CommandText = "SELECT COUNT(*) FROM LOCATIONS";
+            cmd.CommandText = "SELECT COUNT(*) FROM EMPLOYEES";
             var count = cmd.ExecuteScalar();
             Assert.AreEqual(1, count);
         }
         
         [Test]
-        public void Test_OrmGet_NamePersistedSuccessfully()
+        public void Test_OrmGetWithFK_LocationForeignKeyPersistedSuccessfully()
         {
             Location l = new Location();
             l.ID = _id;
@@ -53,10 +64,21 @@ namespace SWE3_OR_Mapper.Tests
             l.Street = "Kingstreet";
             l.HouseNumber = 25;
             Orm.Save(l);
+
+            Employee e = new Employee();
+            e.ID = _id;
+            e.FirstName = "Jerry";
+            e.Name = "Mouse";
+            e.Gender = Gender.Male;
+            e.BirthDate = new DateTime(1970, 4, 30);
+            e.HireDate = new DateTime(2015, 6, 20);
+            e.Salary = 62000;
+            e.Location = l;
+            Orm.Save(e);
             
-            l = Orm.Get<Location>(_id);
+            e = Orm.Get<Employee>(_id);
             
-            Assert.AreEqual(_name, l.Name);
+            Assert.AreEqual(_name, e.Location.Name);
         }
         
         [TearDown]
@@ -65,6 +87,9 @@ namespace SWE3_OR_Mapper.Tests
             IDbCommand cmd = Orm.Connection.CreateCommand();
             cmd.CommandText = "DROP TABLE LOCATIONS";
             cmd.ExecuteNonQuery();
+            cmd.CommandText = "DROP TABLE EMPLOYEES";
+            cmd.ExecuteNonQuery();
+            cmd.Dispose();
         }
     }
 }
