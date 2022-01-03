@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SWE3-OR-Mapper", "SWE3-OR-M
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SWE3-OR-Mapper.SampleApp", "SWE3-OR-Mapper.SampleApp\SWE3-OR-Mapper.SampleApp.csproj", "{E09BBF26-2BBD-49AD-9BC7-B5A23C29E52B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SWE3-OR-Mapper.Tests", "SWE3-OR-Mapper.Tests\SWE3-OR-Mapper.Tests.csproj", "{72EEC961-8622-4C51-9ADC-72F8C27FE31C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{E09BBF26-2BBD-49AD-9BC7-B5A23C29E52B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E09BBF26-2BBD-49AD-9BC7-B5A23C29E52B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E09BBF26-2BBD-49AD-9BC7-B5A23C29E52B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{72EEC961-8622-4C51-9ADC-72F8C27FE31C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{72EEC961-8622-4C51-9ADC-72F8C27FE31C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{72EEC961-8622-4C51-9ADC-72F8C27FE31C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{72EEC961-8622-4C51-9ADC-72F8C27FE31C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
