@@ -23,5 +23,10 @@ namespace SWE3_OR_Mapper.Tests.Library
         
         [ForeignKey(ColumnName = "KLOCATION")]
         public List<Employee> Employees { get; private set; }
+        
+        
+        protected static int _N = 1;
+        [Ignore]
+        public int InstanceNumber { get; protected set; } = _N++;
     }
 }

@@ -3,34 +3,33 @@ using System.Data;
 using Moq;
 using Npgsql;
 using NUnit.Framework;
+using SWE3_OR_Mapper.Cache;
 using SWE3_OR_Mapper.Tests.Library;
 
 namespace SWE3_OR_Mapper.Tests
 {
     [TestFixture]
     [Parallelizable(ParallelScope.All)]
-    public class SaveGetTests
+    public class CacheTests
     {
-        private string _name;
         private string _id;
         
         [SetUp]
         public void Setup()
         {
-            Orm.Connection = new NpgsqlConnection("Host=localhost;Port=5433;Username=swe3-test;Password=Test123;Database=postgres");
+            Orm.Connection = new NpgsqlConnection("Host=localhost;Port=5436;Username=swe3-test;Password=Test123;Database=postgres");
             Orm.Connection.Open();
             
-            _name = "Vienna City Library Test";
             _id = "l.0";
         }
 
         [Test]
         [NonParallelizable]
-        public void Test_OrmSave_OneRowInTable()
+        public void Test_OrmCaching_MultipleObjectsHaveSameInstanceNumber()
         {
             Location l = new Location();
             l.ID = _id;
-            l.Name = _name;
+            l.Name = "Vienna City Library Test";
             l.Country = "Austria";
             l.City = "Vienna";
             l.PostalCode = 1010;
@@ -38,29 +37,18 @@ namespace SWE3_OR_Mapper.Tests
             l.HouseNumber = 25;
             Orm.Save(l);
 
-            IDbCommand cmd = Orm.Connection.CreateCommand();
-            cmd.CommandText = "SELECT COUNT(*) FROM LOCATIONS";
-            var count = cmd.ExecuteScalar();
-            Assert.AreEqual(1, count);
-        }
-        
-        [Test]
-        [NonParallelizable]
-        public void Test_OrmGet_NamePersistedSuccessfully()
-        {
-            Location l = new Location();
-            l.ID = _id;
-            l.Name = _name;
-            l.Country = "Austria";
-            l.City = "Vienna";
-            l.PostalCode = 1010;
-            l.Street = "Kingstreet";
-            l.HouseNumber = 25;
-            Orm.Save(l);
+            Orm.Cache = new HashCache();
+            int firstInstance = 0;
+            for (int i = 0; i <= 5; i++)
+            {
+                l = Orm.Get<Location>(_id);
+                if (i == 0)
+                {
+                    firstInstance = l.InstanceNumber;
+                }
+            }
             
-            l = Orm.Get<Location>(_id);
-            
-            Assert.AreEqual(_name, l.Name);
+            Assert.AreEqual(firstInstance, l.InstanceNumber);
         }
         
         [TearDown]

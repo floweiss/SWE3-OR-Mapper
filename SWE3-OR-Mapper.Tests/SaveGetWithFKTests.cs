@@ -7,26 +7,31 @@ using SWE3_OR_Mapper.Tests.Library;
 
 namespace SWE3_OR_Mapper.Tests
 {
-    public class ChangeSaveGetWithFKTests
+    [TestFixture]
+    [Parallelizable(ParallelScope.All)]
+    public class SaveGetWithFKTests
     {
         private string _name;
-        private string _id;
+        private string _idEmployee;
+        private string _idLocation;
         
         [SetUp]
         public void Setup()
         {
-            Orm.Connection = new NpgsqlConnection("Host=localhost;Port=5433;Username=swe3-test;Password=Test123;Database=postgres");
+            Orm.Connection = new NpgsqlConnection("Host=localhost;Port=5434;Username=swe3-test;Password=Test123;Database=postgres");
             Orm.Connection.Open();
             
-            _id = "e.0";
+            _idEmployee = "e.0";
+            _idLocation = "l.0";
             _name = "Vienna City Library Test";
         }
 
         [Test]
+        [NonParallelizable]
         public void Test_OrmSaveWithFK_OneRowInTable()
         {
             Location l = new Location();
-            l.ID = _id;
+            l.ID = _idLocation;
             l.Name = _name;
             l.Country = "Austria";
             l.City = "Vienna";
@@ -36,7 +41,7 @@ namespace SWE3_OR_Mapper.Tests
             Orm.Save(l);
 
             Employee e = new Employee();
-            e.ID = _id;
+            e.ID = _idEmployee;
             e.FirstName = "Jerry";
             e.Name = "Mouse";
             e.Gender = Gender.Male;
@@ -53,10 +58,11 @@ namespace SWE3_OR_Mapper.Tests
         }
         
         [Test]
+        [NonParallelizable]
         public void Test_OrmGetWithFK_LocationForeignKeyPersistedSuccessfully()
         {
             Location l = new Location();
-            l.ID = _id;
+            l.ID = _idLocation;
             l.Name = _name;
             l.Country = "Austria";
             l.City = "Vienna";
@@ -66,7 +72,7 @@ namespace SWE3_OR_Mapper.Tests
             Orm.Save(l);
 
             Employee e = new Employee();
-            e.ID = _id;
+            e.ID = _idEmployee;
             e.FirstName = "Jerry";
             e.Name = "Mouse";
             e.Gender = Gender.Male;
@@ -76,7 +82,7 @@ namespace SWE3_OR_Mapper.Tests
             e.Location = l;
             Orm.Save(e);
             
-            e = Orm.Get<Employee>(_id);
+            e = Orm.Get<Employee>(_idEmployee);
             
             Assert.AreEqual(_name, e.Location.Name);
         }
@@ -84,12 +90,14 @@ namespace SWE3_OR_Mapper.Tests
         [TearDown]
         public void TearDown()
         {
-            IDbCommand cmd = Orm.Connection.CreateCommand();
-            cmd.CommandText = "DROP TABLE LOCATIONS";
+            /*IDbCommand cmd = Orm.Connection.CreateCommand();
+            cmd.CommandText = "DROP TABLE IF EXISTS LOCATIONS";
             cmd.ExecuteNonQuery();
-            cmd.CommandText = "DROP TABLE EMPLOYEES";
+            cmd.CommandText = "DROP TABLE IF EXISTS EMPLOYEES";
             cmd.ExecuteNonQuery();
-            cmd.Dispose();
+            cmd.Dispose();*/
+            Orm.Connection.Close();
+            Orm.Connection = null;
         }
     }
 }

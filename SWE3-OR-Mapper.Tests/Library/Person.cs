@@ -5,8 +5,6 @@ namespace SWE3_OR_Mapper.Tests.Library
 {
     public abstract class Person
     {
-        protected static int _N = 1;
-        
         [PrimaryKey]
         public string ID { get; set; }
 
@@ -18,8 +16,5 @@ namespace SWE3_OR_Mapper.Tests.Library
         public DateTime BirthDate { get; set; }
         
         public Gender Gender { get; set; }
-        
-        [Ignore]
-        public int InstanceNumber { get; protected set; } = _N++;
     }
 }
