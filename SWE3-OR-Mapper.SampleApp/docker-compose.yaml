@@ -1,0 +1,10 @@
+﻿version: '3'
+services:
+  postgres-db:
+    image: postgres:latest
+    container_name: postgres-or-mapper
+    ports:
+      - 5432:5432/tcp
+    environment:
+      POSTGRES_USER: swe3
+      POSTGRES_PASSWORD: Test123
