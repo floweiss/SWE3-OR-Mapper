@@ -9,7 +9,7 @@ namespace SWE3_OR_Mapper.Cache
     /// <summary> This class is a basic implementation of an Orm Cache </summary>
     public class Cache : ICache
     {
-        /// <summary> Cache dictionary witch stores a dictionary for every type </summary>
+        /// <summary> Cache dictionary which stores a dictionary for every type </summary>
         protected Dictionary<Type, Dictionary<object, object>> Caches = new Dictionary<Type, Dictionary<object, object>>();
 
         /// <summary> Returns the cache dictionary for a given type </summary>

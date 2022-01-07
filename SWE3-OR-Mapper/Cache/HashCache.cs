@@ -12,7 +12,7 @@ namespace SWE3_OR_Mapper.Cache
     /// <summary> This class is a implementation with change tracking of an Orm Cache </summary>
     public class HashCache : Cache
     {
-        /// <summary> Hash dictionary witch stores a dictionary for every type </summary>
+        /// <summary> Hash dictionary which stores a dictionary for every type </summary>
         protected Dictionary<Type, Dictionary<object, string>> Hashes = new Dictionary<Type, Dictionary<object, string>>();
 
         /// <summary> Returns the hash dictionary for a given type </summary>
@@ -32,7 +32,7 @@ namespace SWE3_OR_Mapper.Cache
         }
 
         /// <summary> Generates the hash for a given object </summary>
-        /// <param name="obj"> Object for witch the hash is generated </param>
+        /// <param name="obj"> Object for which the hash is generated </param>
         /// <returns> Generated hash </returns>
         protected string GenerateHash(object obj)
         {
