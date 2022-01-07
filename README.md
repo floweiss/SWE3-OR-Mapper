@@ -7,6 +7,7 @@ This OR-Mapper-project was done by Florian Weiss as part of the course Software 
 For all OR-mapping functionalities the Orm class is used.
 This class contains functions which can be used to create, read, update and delete objects from the database.
 The framework supports 1:1, 1:N and M:N relations between objects.
+All database tables are created by the framework and do not need to be created manually.
 
 
 
