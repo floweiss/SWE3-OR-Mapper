@@ -11,17 +11,23 @@ using System.Threading.Tasks;
 
 namespace SWE3_OR_Mapper.MetaModel
 {
-    internal class __Field
+    /// <summary> Class containing field metadata </summary>
+    internal class Field
     {
-        public __Field(__Entity entity)
+        /// <summary> Creates a new instance of this class with given entity </summary>
+        /// <param name="entity"> Parent entity </param>
+        public Field(Entity entity)
         {
             Entity = entity;
         }
 
-        public __Entity Entity { get; internal set; }
+        /// <summary> Gets the parent entity </summary>
+        public Entity Entity { get; internal set; }
 
+        /// <summary> Gets the field member </summary>
         public MemberInfo Member { get; internal set; }
 
+        /// <summary> Gets the field type </summary>
         public Type Type
         {
             get
@@ -35,35 +41,43 @@ namespace SWE3_OR_Mapper.MetaModel
             }
         }
 
+        /// <summary> Gets the column name in the table </summary>
         public string ColumnName { get; internal set; }
 
+        /// <summary> Gets the column type in the database </summary>
         public Type ColumnType{ get; internal set; }
 
+        /// <summary> Checks if the field is the primary key </summary>
         public bool IsPrimaryKey { get; internal set; } = false;
 
+        /// <summary> Checks if the field is a foreign key </summary>
         public bool IsForeignKey { get; internal set; } = false;
 
+        /// <summary> Assignment table name for M to N relations </summary>
         public string AssignmentTable
         {
             get; internal set;
         }
 
+        /// <summary> Remote column name </summary>
         public string RemoteColumnName
         {
             get; internal set;
         }
 
+        /// <summary> Checks if the field belongs to an M to N relation </summary>
         public bool IsManyToMany
         {
             get; internal set;
         }
 
+        /// <summary> Checks if the field is nullable </summary>
         public bool IsNullable
         {
             get; internal set;
         } = false;
 
-        
+        /// <summary> Checks if the field is external </summary>
         public bool IsExternal
         {
             get; internal set;
@@ -71,6 +85,8 @@ namespace SWE3_OR_Mapper.MetaModel
         
         
         
+        /// <summary> Gets the foreign key SQL for deleting objects </summary>
+        /// /// <returns> SQL string for deleting </returns>
         internal string DeleteFkSql
         {
             get
@@ -87,6 +103,9 @@ namespace SWE3_OR_Mapper.MetaModel
 
 
 
+        /// <summary> Gets the value of the field </summary>
+        /// <param name="obj"> Object </param>
+        /// <returns> Field value </returns>
         public object GetValue(object obj)
         {
             if (Member is PropertyInfo)
@@ -97,6 +116,9 @@ namespace SWE3_OR_Mapper.MetaModel
             throw new NotSupportedException("Member type not supported!");
         }
 
+        /// <summary> Sets the value of the field </summary>
+        /// <param name="obj"> Object </param>
+        /// <param name="value"> Value </param>
         public void SetValue(object obj, object value)
         {
             if (Member is PropertyInfo)
@@ -109,6 +131,9 @@ namespace SWE3_OR_Mapper.MetaModel
             }
         }
 
+        /// <summary> Convert a field type value to a database column type </summary>
+        /// <param name="value"> Value to be converted </param>
+        /// <returns> Database type representation of the value </returns>
         public object ToColumnType(object value)
         {
             if (IsForeignKey)
@@ -135,6 +160,9 @@ namespace SWE3_OR_Mapper.MetaModel
             return value;
         }
 
+        /// <summary>Converts a database column type value to a field type </summary>
+        /// <param name="value"> Value </param>
+        /// <returns> Field type representation of the value </returns>
         public object ToFieldType(object value)
         {
             if (IsForeignKey)
@@ -179,7 +207,9 @@ namespace SWE3_OR_Mapper.MetaModel
             return value;
         }
 
-        public string ConvertToFieldType()
+        /// <summary> Converts the column type to a string representation of the database type. Used for creating tables </summary>
+        /// <returns> String representation of the database type </returns>
+        public string ToDatabaseType()
         {
             if (ColumnType == typeof(bool))
             {
@@ -209,6 +239,10 @@ namespace SWE3_OR_Mapper.MetaModel
             return "varchar";
         }
 
+        /// <summary> Fills a list with externals for a foreign key </summary>
+        /// <param name="list"> List </param>
+        /// <param name="obj"> object </param>
+        /// <returns> Filled List </returns>
         public object FillExternals(object list, object obj)
         {
             IDbCommand cmd = Orm.Connection.CreateCommand();
@@ -257,12 +291,14 @@ namespace SWE3_OR_Mapper.MetaModel
             return list;
         }
         
+        /// <summary> Updates external field references </summary>
+        /// <param name="obj"> Object </param>
         public void UpdateReferences(object obj)
         {
             if(!IsExternal) return;
 
             Type innerType = Type.GetGenericArguments()[0];
-            __Entity innerEntity = innerType.GetEntity();
+            Entity innerEntity = innerType.GetEntity();
             object pk = Entity.PrimaryKey.ToColumnType(Entity.PrimaryKey.GetValue(obj));
 
             if(IsManyToMany)
@@ -300,7 +336,7 @@ namespace SWE3_OR_Mapper.MetaModel
             }
             else
             {
-                __Field remoteField = innerEntity.GetFieldForColumn(ColumnName);
+                Field remoteField = innerEntity.GetFieldForColumn(ColumnName);
 
                 if(remoteField.IsNullable)
                 {

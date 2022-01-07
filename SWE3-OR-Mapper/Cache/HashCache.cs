@@ -9,10 +9,15 @@ using SWE3_OR_Mapper.MetaModel;
 
 namespace SWE3_OR_Mapper.Cache
 {
+    /// <summary> This class is a implementation with change tracking of an Orm Cache </summary>
     public class HashCache : Cache
     {
+        /// <summary> Hash dictionary witch stores a dictionary for every type </summary>
         protected Dictionary<Type, Dictionary<object, string>> Hashes = new Dictionary<Type, Dictionary<object, string>>();
 
+        /// <summary> Returns the hash dictionary for a given type </summary>
+        /// <param name="t"> Type of the hash dictionary objects </param>
+        /// <returns> Type hash dictionary </returns>
         protected virtual Dictionary<object, string> GetHash(Type t)
         {
             if (Hashes.ContainsKey(t))
@@ -26,10 +31,13 @@ namespace SWE3_OR_Mapper.Cache
             return newHash;
         }
 
+        /// <summary> Generates the hash for a given object </summary>
+        /// <param name="obj"> Object for witch the hash is generated </param>
+        /// <returns> Generated hash </returns>
         protected string GenerateHash(object obj)
         {
             string hash = "";
-            foreach (__Field i in obj.GetEntity().Internals)
+            foreach (Field i in obj.GetEntity().Internals)
             {
                 if (i.IsForeignKey)
                 {
@@ -45,7 +53,7 @@ namespace SWE3_OR_Mapper.Cache
                 }
             }
 
-            foreach (__Field i in obj.GetEntity().Externals)
+            foreach (Field i in obj.GetEntity().Externals)
             {
                 IEnumerable m = (IEnumerable)i.GetValue(obj);
 
@@ -63,7 +71,8 @@ namespace SWE3_OR_Mapper.Cache
         }
 
 
-
+        /// <summary> Sets an object in the cache </summary>
+        /// <param name="obj"> Object to be set </param>
         public override void Set(object obj)
         {
             base.Set(obj);
@@ -73,12 +82,17 @@ namespace SWE3_OR_Mapper.Cache
             }
         }
 
+        /// <summary> Removes an object from the cache </summary>
+        /// <param name="obj"> Object to be removed </param>
         public override void Remove(object obj)
         {
             base.Remove(obj);
             GetHash(obj.GetType()).Remove(obj.GetEntity().PrimaryKey.GetValue(obj));
         }
 
+        /// <summary> Checks if an object has changed </summary>
+        /// <param name="obj"> Object to be checked </param>
+        /// <returns> Returns TRUE if the object has changed. Returns FALSE if the object has not changed </returns>
         public override bool Changed(object obj)
         {
             Dictionary<object, string> hash = GetHash(obj.GetType());

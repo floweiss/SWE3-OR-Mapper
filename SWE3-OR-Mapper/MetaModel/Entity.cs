@@ -9,9 +9,12 @@ using SWE3_OR_Mapper.Attributes;
 
 namespace SWE3_OR_Mapper.MetaModel
 {
-    internal class __Entity
+    /// <summary> Class containing entity metadata </summary>
+    internal class Entity
     {
-        public __Entity(Type type)
+        /// <summary> Creates a new instance of this class with given type </summary>
+        /// <param name="t"> Type </param>
+        public Entity(Type type)
         {
             EntityAttribute typeAttr = (EntityAttribute) type.GetCustomAttribute(typeof(EntityAttribute));
             if ((typeAttr == null) || (string.IsNullOrWhiteSpace(typeAttr.TableName)))
@@ -25,12 +28,12 @@ namespace SWE3_OR_Mapper.MetaModel
 
             Member = type;
 
-            List<__Field> fields = new List<__Field>();
+            List<Field> fields = new List<Field>();
             foreach (PropertyInfo info in type.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
             {
                 if ((IgnoreAttribute) info.GetCustomAttribute(typeof(IgnoreAttribute)) != null) continue;
 
-                __Field field = new __Field(this);
+                Field field = new Field(this);
 
                 FieldAttribute fieldAttribute = (FieldAttribute) info.GetCustomAttribute(typeof(FieldAttribute));
 
@@ -73,49 +76,57 @@ namespace SWE3_OR_Mapper.MetaModel
         }
 
 
+        /// <summary> Gets the type of the member </summary>
         public Type Member { get; private set; }
 
+        /// <summary> Gets the name of the table </summary>
         public string TableName { get; private set; }
 
-        public __Field[] Fields { get; private set; }
+        /// <summary> Gets all fields </summary>
+        public Field[] Fields { get; private set; }
 
-        public __Field[] Externals { get; private set; }
+        /// <summary> Gets external fields. These are not stored in the underlying table </summary>
+        public Field[] Externals { get; private set; }
         
-        public __Field[] Internals { get; private set; }
+        /// <summary> Gets internal fields </summary>
+        public Field[] Internals { get; private set; }
 
-        public __Field PrimaryKey { get; private set; }
+        /// <summary> Gets the primary key </summary>
+        public Field PrimaryKey { get; private set; }
 
-        public string GetSQLQuery(string prefix = null)
+        /// <summary> Gets the SQL for all fields </summary>
+        /// <returns> SQL string </returns>
+        public string GetSQLQuery()
         {
-            if (prefix == null)
-            {
-                prefix = "";
-            }
-
-            string rval = "SELECT ";
+            string query = "SELECT ";
             for (int i = 0; i < Internals.Length; i++)
             {
                 if (i > 0)
                 {
-                    rval += ", ";
+                    query += ", ";
                 }
 
-                rval += prefix.Trim() + Internals[i].ColumnName;
+                query += Internals[i].ColumnName;
             }
 
-            rval += " FROM " + TableName;
-            return rval;
+            query += " FROM " + TableName;
+            return query;
         }
 
+        /// <summary> Gets the SQL for count purposes </summary>
+        /// <returns> SQL count string </returns>
         public string GetCountSQLQuery()
         {
             return "SELECT " + Internals[0].ColumnName + " FROM " + TableName;
         }
 
-        public __Field GetFieldForColumn(string columnName)
+        /// <summary> Gets a field by its column name </summary>
+        /// <param name="columnName"> Column name </param>
+        /// <returns> Field </returns>
+        public Field GetFieldForColumn(string columnName)
         {
             columnName = columnName.ToUpper();
-            foreach (__Field i in Internals)
+            foreach (Field i in Internals)
             {
                 if (i.ColumnName.ToUpper() == columnName) { return i; }
             }

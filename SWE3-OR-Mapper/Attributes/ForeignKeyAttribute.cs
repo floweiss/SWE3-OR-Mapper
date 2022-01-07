@@ -5,7 +5,7 @@ namespace SWE3_OR_Mapper.Attributes
     /// <summary> This attribute marks a property as a foreign key field </summary>
     public class ForeignKeyAttribute : FieldAttribute
     {
-        /// <summary> Name of Assignment table for n:m relations </summary>
+        /// <summary> Name of Assignment table for m to n relations </summary>
         public string AssignmentTable = null;
         
         /// <summary> Name of column in Assignment table</summary>

@@ -11,21 +11,28 @@ using SWE3_OR_Mapper.MetaModel;
 
 namespace SWE3_OR_Mapper
 {
+    /// <summary> Class implementing OR framework functionalities </summary>
     public static class Orm
     {
-        private static Dictionary<Type, __Entity> _entities = new Dictionary<Type, __Entity>();
+        /// <summary>Entities.</summary>
+        private static Dictionary<Type, Entity> _entities = new Dictionary<Type, Entity>();
 
+        /// <summary> Database connection used by the framework </summary>
         public static IDbConnection Connection { get; set; }
 
+        /// <summary> Cache used by the framework </summary>
         public static ICache Cache { get; set; }
 
-        internal static __Entity GetEntity(this object obj)
+        /// <summary> Returns an entity for a given object </summary>
+        /// <param name="obj"> Object </param>
+        /// <returns> Entity for the object </returns>
+        internal static Entity GetEntity(this object obj)
         {
             Type type = ((obj is Type) ? (Type) obj : obj.GetType());
 
             if (!_entities.ContainsKey(type))
             {
-                _entities.Add(type, new __Entity(type));
+                _entities.Add(type, new Entity(type));
             }
 
             return _entities[type];
@@ -33,6 +40,8 @@ namespace SWE3_OR_Mapper
 
 
 
+        /// <summary> Saves an object </summary>
+        /// <param name="obj"> Object </param>
         public static void Save(object obj)
         {
             if (Cache != null && !Cache.Changed(obj))
@@ -40,7 +49,7 @@ namespace SWE3_OR_Mapper
                 return;
             }
 
-            __Entity ent = obj.GetEntity();
+            Entity ent = obj.GetEntity();
             CreateTable(obj);
 
             IDbCommand cmd = Connection.CreateCommand();
@@ -105,12 +114,14 @@ namespace SWE3_OR_Mapper
                 Cache.Set(obj);
             }
             
-            foreach(__Field i in ent.Externals) { i.UpdateReferences(obj); }
+            foreach(Field i in ent.Externals) { i.UpdateReferences(obj); }
         }
         
+        /// <summary> Deletes an object </summary>
+        /// <param name="obj"> Object </param>
         public static void Delete(object obj)
         {
-            __Entity ent = obj.GetEntity();
+            Entity ent = obj.GetEntity();
             CreateTable(obj);
             IDbCommand cmd = Connection.CreateCommand();
             cmd.CommandText = "DELETE FROM " + ent.TableName + " WHERE " + ent.PrimaryKey.ColumnName + " = :pk";
@@ -122,7 +133,7 @@ namespace SWE3_OR_Mapper
             cmd.ExecuteNonQuery();
             cmd.Dispose();
 
-            foreach (__Field externalField in ent.Externals)
+            foreach (Field externalField in ent.Externals)
             {
                 IDbCommand cmdExt = Connection.CreateCommand();
                 IDataParameter pExt = cmdExt.CreateParameter();
@@ -151,6 +162,9 @@ namespace SWE3_OR_Mapper
             }
         }
 
+        /// <summary> Counts stored objects of a given type </summary>
+        /// <typeparam name="T"> Type </typeparam>
+        /// <returns> Number of stored objects </returns>
         public static int Count<T>()
         {
             Type type = typeof(T);
@@ -171,6 +185,10 @@ namespace SWE3_OR_Mapper
             return counter;
         }
 
+        /// <summary> Gets an object of a type by its primary key </summary>
+        /// <typeparam name="T"> Type </typeparam>
+        /// <param name="pk"> Primary key </param>
+        /// <returns> Object </returns>
         public static T Get<T>(object pk)
         {
             Type type = typeof(T);
@@ -188,7 +206,7 @@ namespace SWE3_OR_Mapper
             object obj = null;
             if (reader.Read())
             {
-                __Entity ent = type.GetEntity();
+                Entity ent = type.GetEntity();
                 obj = SearchCache(type, ent.PrimaryKey.ToFieldType(reader.GetValue(reader.GetOrdinal(ent.PrimaryKey.ColumnName))));
 
                 if (obj == null)
@@ -202,19 +220,19 @@ namespace SWE3_OR_Mapper
                 }
 
                 List<object> readerObjects = new List<object>();
-                foreach (__Field i in ent.Internals)
+                foreach (Field i in ent.Internals)
                 {
                     readerObjects.Add(reader.GetValue(reader.GetOrdinal(i.ColumnName)));
                 }
                 reader.Close();
-                foreach (__Field i in ent.Internals)
+                foreach (Field i in ent.Internals)
                 {
                     object value = i.ToFieldType(readerObjects[0]);
                     readerObjects.RemoveAt(0);
                     i.SetValue(obj, value);
                 }
 
-                foreach (__Field i in ent.Externals)
+                foreach (Field i in ent.Externals)
                 {
                     object list = Activator.CreateInstance(i.Type);
                     i.SetValue(obj, i.FillExternals(list, obj));
@@ -232,6 +250,9 @@ namespace SWE3_OR_Mapper
             return (T) obj;
         }
 
+        /// <summary> Gets all objects of a type </summary>
+        /// <typeparam name="T"> Type </typeparam>
+        /// <returns> List of objects </returns>
         public static List<T> GetAll<T>()
         {
             Type type = typeof(T);
@@ -241,14 +262,14 @@ namespace SWE3_OR_Mapper
 
             List<T> objects = new List<T>();
             object obj = null;
-            __Entity ent = type.GetEntity();
+            Entity ent = type.GetEntity();
             List<object>[] readerObjects = new List<object>[Count<T>()];
             int counter = 0;
             IDataReader reader = cmd.ExecuteReader();
             while (reader.Read())
             {
                 readerObjects[counter] = new List<object>();
-                foreach (__Field i in ent.Internals)
+                foreach (Field i in ent.Internals)
                 {
                     readerObjects[counter].Add(reader.GetValue(reader.GetOrdinal(i.ColumnName)));
                 }
@@ -263,14 +284,14 @@ namespace SWE3_OR_Mapper
             {
                 obj = Activator.CreateInstance(type);
 
-                foreach (__Field i in ent.Internals)
+                foreach (Field i in ent.Internals)
                 {
                     object value = i.ToFieldType(readerObject[0]);
                     readerObject.RemoveAt(0);
                     i.SetValue(obj, value);
                 }
 
-                foreach (__Field i in ent.Externals)
+                foreach (Field i in ent.Externals)
                 {
                     object list = Activator.CreateInstance(i.Type);
                     i.SetValue(obj, i.FillExternals(list, obj));
@@ -285,6 +306,10 @@ namespace SWE3_OR_Mapper
         }
 
 
+        /// <summary> Searches the cached objects for an object and returns it if it exists </summary>
+        /// <param name="t"> Type </param>
+        /// <param name="pk"> Primary key </param>
+        /// <returns> Returns the cached object that contains the primary key. Returns NULL if no such object has been found </returns>
         internal static object SearchCache(Type t, object pk)
         {
             if (Cache != null && Cache.ContainsKey(t, pk))
@@ -295,20 +320,23 @@ namespace SWE3_OR_Mapper
             return null;
         }
 
+        /// <summary> Creates an object of a given type from a database reader </summary>
+        /// <typeparam name="type"> Type </typeparam>
+        /// <param name="reader"> Reader </param>
+        /// <param name="inLoop"> Flag indicating if the method is called in a loop </param>
+        /// <returns>Object.</returns>
         internal static object CreateObject(Type type, IDataReader reader, bool inLoop = false)
         {
-            __Entity ent = type.GetEntity();
+            Entity ent = type.GetEntity();
             object obj = SearchCache(type, ent.PrimaryKey.ToFieldType(reader.GetValue(reader.GetOrdinal(ent.PrimaryKey.ColumnName))));
 
             if (obj == null)
             {
-                //if (_localCache == null) { _localCache = new List<object>(); }
                 obj = Activator.CreateInstance(type);
-                //_localCache.Add(obj);
             }
 
             List<object> readerObjects = new List<object>();
-            foreach (__Field i in ent.Internals)
+            foreach (Field i in ent.Internals)
             {
                 if (i.IsForeignKey && inLoop)
                 {
@@ -322,7 +350,7 @@ namespace SWE3_OR_Mapper
                 reader.Close();
             }
 
-            foreach (__Field i in ent.Internals)
+            foreach (Field i in ent.Internals)
             {
                 if (i.IsForeignKey && inLoop)
                 {
@@ -338,7 +366,7 @@ namespace SWE3_OR_Mapper
                 reader.Close();
             }
 
-            foreach (__Field i in ent.Externals)
+            foreach (Field i in ent.Externals)
             {
                 i.SetValue(obj, i.FillExternals(Activator.CreateInstance(i.Type), obj));
             }
@@ -346,6 +374,10 @@ namespace SWE3_OR_Mapper
             return obj;
         }
 
+        /// <summary> Creates an object of a type by its primary key </summary>
+        /// <param name="type">Type.</param>
+        /// <param name="pk"> Primary key </param>
+        /// <returns> Object </returns>
         internal static object GetObject(Type type, object pk)
         {
             object obj = SearchCache(type, pk);
@@ -378,44 +410,30 @@ namespace SWE3_OR_Mapper
             return obj;
         }
         
-        internal static void FillList(Type t, object list, IDataReader re)
+        /// <summary> Fills a list with object of a type from a database reader </summary>
+        /// <param name="type"> Type </param>
+        /// <param name="list"> List </param>
+        /// <param name="reader"> Reader </param>
+        internal static void FillList(Type type, object list, IDataReader reader)
         {
-            while(re.Read())
+            while(reader.Read())
             {
-                list.GetType().GetMethod("Add").Invoke(list, new object[] { CreateObject(t, re) });
+                list.GetType().GetMethod("Add").Invoke(list, new object[] { CreateObject(type, reader) });
             }
         }
-        
-        internal static void FillList(Type t, object list, string sql, IEnumerable<Tuple<string, object>> parameters)
-        {
-            IDbCommand cmd = Connection.CreateCommand();
-            cmd.CommandText = sql;
 
-            foreach(Tuple<string, object> i in parameters)
-            {
-                IDataParameter p = cmd.CreateParameter();
-                p.ParameterName = i.Item1;
-                p.Value = i.Item2;
-                cmd.Parameters.Add(p);
-            }
-
-            IDataReader re = cmd.ExecuteReader();
-            FillList(t, list, re);
-            re.Close();
-            re.Dispose();
-            cmd.Dispose();
-        }
-
+        /// <summary> Creates the database table for an object if the table does not exist </summary>
+        /// <param name="obj"> Object </param>
         internal static void CreateTable(object obj)
         {
-            __Entity ent = obj.GetEntity();
+            Entity ent = obj.GetEntity();
             IDbCommand cmd = Connection.CreateCommand();
             cmd.CommandText = ("CREATE TABLE IF NOT EXISTS " + ent.TableName + " (");
 
             int i = 0;
-            foreach (__Field field in ent.Internals)
+            foreach (Field field in ent.Internals)
             {
-                cmd.CommandText += field.ColumnName.ToLower() + " " + field.ConvertToFieldType();
+                cmd.CommandText += field.ColumnName.ToLower() + " " + field.ToDatabaseType();
                 i++;
                 if (field.IsPrimaryKey)
                 {
@@ -430,17 +448,17 @@ namespace SWE3_OR_Mapper
             i = 0;
             string assignmentTableSql = null;
             List<object> externals = new List<object>();
-            foreach (__Field field in ent.Externals)
+            foreach (Field field in ent.Externals)
             {
                 if (field.AssignmentTable != null)
                 {
                     assignmentTableSql += "CREATE TABLE IF NOT EXISTS " + field.AssignmentTable + "(" +
-                                         field.ColumnName + " " + ent.PrimaryKey.ConvertToFieldType() + ", " +
+                                         field.ColumnName + " " + ent.PrimaryKey.ToDatabaseType() + ", " +
                                          field.RemoteColumnName + " ";
                     if (field.Type.GetInterface(nameof(IEnumerable)) != null)
                     {
                         assignmentTableSql += Activator.CreateInstance(field.Type.GetGenericArguments()[0]).GetEntity().PrimaryKey
-                            .ConvertToFieldType();
+                            .ToDatabaseType();
                     }
                     else
                     {
