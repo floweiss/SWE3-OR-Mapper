@@ -119,7 +119,7 @@ To remove the cache the `Cache` is set to `null`:
 `Orm.Cache = null;`
 
 
-### Save object
+### Save and update object
 An object is saved with the `Save()` method:
 ```
 Location l = new Location();
@@ -131,6 +131,11 @@ l.PostalCode = 1010;
 l.Street = "Kingstreet";
 l.HouseNumber = 25;
 
+Orm.Save(l);
+```
+If changes are done, the object can be updated with the `Save()` method:
+```
+l.HouseNumber = 33;
 Orm.Save(l);
 ```
 
